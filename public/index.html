@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ScamIntel Investigation Platform</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="search-band">
+        <div class="brand-block">
+          <p class="eyebrow">Suspicious infrastructure triage</p>
+          <h1>ScamIntel</h1>
+          <p class="lede">Trace scam infrastructure, preserve evidence, and connect URLs, IPs, emails, wallets, and other indicators.</p>
+        </div>
+        <form id="investigation-form" class="target-form">
+          <label for="target-input">Target</label>
+          <div class="target-row">
+            <input id="target-input" name="target" autocomplete="off" spellcheck="false" placeholder="https://example.com/login or 8.8.8.8" required>
+            <button type="submit">Investigate</button>
+          </div>
+          <p id="form-status" class="status-line" role="status"></p>
+        </form>
+      </section>
+
+      <section class="workspace">
+        <aside class="history-panel">
+          <div class="panel-header">
+            <h2>Cases</h2>
+            <div class="mini-actions">
+              <button id="global-graph-button" class="ghost-button" type="button">Global Graph</button>
+              <button id="clear-history" class="ghost-button" type="button">Clear</button>
+            </div>
+          </div>
+          <div id="history-list" class="history-list"></div>
+          <div class="pivot-panel">
+            <h3>IOC Reuse</h3>
+            <div id="pivot-list" class="pivot-list"></div>
+          </div>
+        </aside>
+
+        <section class="results-panel">
+          <div id="empty-state" class="empty-state">
+            <h2>Ready for a target</h2>
+            <p>Run an investigation to populate structured evidence, indicators, and raw technical details.</p>
+          </div>
+
+          <div id="results" class="results hidden">
+            <div class="result-header">
+              <div>
+                <p class="eyebrow">Current investigation</p>
+                <h2 id="result-title"></h2>
+                <p id="result-meta"></p>
+              </div>
+              <div class="button-row">
+                <button id="export-case" class="secondary-button" type="button">Export Case</button>
+                <button id="copy-json" class="secondary-button" type="button">Copy JSON</button>
+              </div>
+            </div>
+
+            <div id="signals" class="signal-grid"></div>
+
+            <div class="detail-grid">
+              <section class="detail-section case-section">
+                <h3>Case Metadata</h3>
+                <form id="case-form" class="case-form">
+                  <label>Title<input name="title" autocomplete="off"></label>
+                  <label>Status<select name="status"><option value="open">Open</option><option value="monitoring">Monitoring</option><option value="referred">Referred</option><option value="closed">Closed</option></select></label>
+                  <label>Scam Category<input name="scamCategory" autocomplete="off" placeholder="Investment, phishing, recovery scam"></label>
+                  <label>Examiner<input name="examiner" autocomplete="off"></label>
+                  <label>Source Of Report<input name="sourceOfReport" autocomplete="off"></label>
+                  <label>Victim / Complainant<input name="victim" autocomplete="off"></label>
+                  <label>Loss Amount<input name="lossAmount" autocomplete="off"></label>
+                  <label>Jurisdiction<input name="jurisdiction" autocomplete="off"></label>
+                  <label class="wide-field">Notes<textarea name="notes" rows="4"></textarea></label>
+                  <button class="secondary-button" type="submit">Save Metadata</button>
+                </form>
+              </section>
+
+              <section class="detail-section">
+                <h3>Identity</h3>
+                <dl id="identity-list"></dl>
+              </section>
+
+              <section class="detail-section">
+                <h3>HTTP</h3>
+                <div id="http-details"></div>
+              </section>
+
+              <section class="detail-section">
+                <h3>DNS</h3>
+                <div id="dns-details"></div>
+              </section>
+
+              <section class="detail-section">
+                <h3>TLS</h3>
+                <div id="tls-details"></div>
+              </section>
+
+              <section class="detail-section source-section">
+                <h3>Page Extracts</h3>
+                <div id="source-details"></div>
+              </section>
+            </div>
+
+            <section class="detail-section evidence-section">
+              <h3>Evidence Timeline</h3>
+              <div id="evidence-details"></div>
+            </section>
+
+            <section class="detail-section raw-section">
+              <h3>Raw Evidence</h3>
+              <pre id="raw-json"></pre>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
