@@ -7,13 +7,10 @@ const path = require("node:path");
 const tls = require("node:tls");
 const { URL, domainToUnicode } = require("node:url");
 const fs = require("node:fs/promises");
-const { DatabaseSync } = require("node:sqlite");
 const psl = require("psl");
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, "public");
-const DATA_DIR = path.join(__dirname, "data");
-const DB_PATH = path.join(DATA_DIR, "sniffer.sqlite");
 const MAX_REDIRECTS = 6;
 const REQUEST_TIMEOUT_MS = 8000;
 const MAX_SOURCE_BYTES = 512 * 1024;
@@ -32,101 +29,6 @@ const MIME_TYPES = {
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
 };
-
-let db;
-
-async function initDatabase() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  db = new DatabaseSync(DB_PATH);
-  db.exec(`
-    PRAGMA foreign_keys = ON;
-    PRAGMA journal_mode = WAL;
-    CREATE TABLE IF NOT EXISTS cases (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      normalized_target TEXT NOT NULL UNIQUE,
-      target_type TEXT NOT NULL,
-      risk_level TEXT NOT NULL,
-      scanned_at TEXT NOT NULL,
-      result_json TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_cases_scanned_at ON cases(scanned_at DESC);
-    CREATE TABLE IF NOT EXISTS scans (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      case_id INTEGER NOT NULL,
-      scanned_at TEXT NOT NULL,
-      risk_level TEXT NOT NULL,
-      result_json TEXT NOT NULL,
-      result_sha256 TEXT NOT NULL,
-      source_sha256 TEXT,
-      headers_sha256 TEXT,
-      FOREIGN KEY(case_id) REFERENCES cases(id) ON DELETE CASCADE
-    );
-    CREATE INDEX IF NOT EXISTS idx_scans_case_id ON scans(case_id, scanned_at DESC);
-    CREATE TABLE IF NOT EXISTS audit_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      case_id INTEGER,
-      scan_id INTEGER,
-      action TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      detail_json TEXT,
-      FOREIGN KEY(case_id) REFERENCES cases(id) ON DELETE CASCADE,
-      FOREIGN KEY(scan_id) REFERENCES scans(id) ON DELETE CASCADE
-    );
-    CREATE INDEX IF NOT EXISTS idx_audit_case_id ON audit_log(case_id, created_at DESC);
-    CREATE TABLE IF NOT EXISTS graph_nodes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      node_type TEXT NOT NULL,
-      value TEXT NOT NULL,
-      label TEXT NOT NULL,
-      risk_level TEXT NOT NULL DEFAULT 'info',
-      first_seen TEXT NOT NULL,
-      last_seen TEXT NOT NULL,
-      UNIQUE(node_type, value)
-    );
-    CREATE INDEX IF NOT EXISTS idx_graph_nodes_type_value ON graph_nodes(node_type, value);
-    CREATE TABLE IF NOT EXISTS graph_edges (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      source_node_id INTEGER NOT NULL,
-      target_node_id INTEGER NOT NULL,
-      relationship TEXT NOT NULL,
-      case_id INTEGER NOT NULL,
-      scan_id INTEGER NOT NULL,
-      evidence_ref TEXT,
-      created_at TEXT NOT NULL,
-      FOREIGN KEY(source_node_id) REFERENCES graph_nodes(id) ON DELETE CASCADE,
-      FOREIGN KEY(target_node_id) REFERENCES graph_nodes(id) ON DELETE CASCADE,
-      FOREIGN KEY(case_id) REFERENCES cases(id) ON DELETE CASCADE,
-      FOREIGN KEY(scan_id) REFERENCES scans(id) ON DELETE CASCADE
-    );
-    CREATE INDEX IF NOT EXISTS idx_graph_edges_case_id ON graph_edges(case_id, scan_id);
-  `);
-  ensureCaseColumns();
-}
-
-function ensureCaseColumns() {
-  const existing = new Set(db.prepare("PRAGMA table_info(cases)").all().map((column) => column.name));
-  const columns = [
-    ["case_number", "TEXT"],
-    ["title", "TEXT"],
-    ["status", "TEXT NOT NULL DEFAULT 'open'"],
-    ["scam_category", "TEXT"],
-    ["examiner", "TEXT"],
-    ["source_of_report", "TEXT"],
-    ["victim", "TEXT"],
-    ["loss_amount", "TEXT"],
-    ["jurisdiction", "TEXT"],
-    ["notes", "TEXT"],
-    ["created_at", "TEXT"],
-    ["updated_at", "TEXT"],
-  ];
-
-  for (const [name, definition] of columns) {
-    if (!existing.has(name)) {
-      db.exec(`ALTER TABLE cases ADD COLUMN ${name} ${definition}`);
-    }
-  }
-  db.exec("UPDATE cases SET created_at = COALESCE(created_at, scanned_at), updated_at = COALESCE(updated_at, scanned_at), case_number = COALESCE(case_number, 'SNF-' || printf('%06d', id))");
-}
 
 function sendJson(res, status, payload) {
   res.writeHead(status, {
@@ -190,431 +92,40 @@ function sha256(value) {
   return crypto.createHash("sha256").update(value || "", "utf8").digest("hex");
 }
 
-function logAudit(caseId, scanId, action, detail = {}) {
-  db.prepare("INSERT INTO audit_log (case_id, scan_id, action, created_at, detail_json) VALUES (?, ?, ?, ?, ?)")
-    .run(caseId || null, scanId || null, action, new Date().toISOString(), JSON.stringify(detail));
-}
-
-function graphLabel(type, value) {
-  if (type === "case") {
-    return value;
-  }
-  if (value.length <= 54) {
-    return value;
-  }
-  return `${value.slice(0, 26)}...${value.slice(-22)}`;
-}
-
-function upsertGraphNode(type, value, riskLevel = "info") {
-  const normalized = String(value || "").trim();
-  if (!normalized) {
-    return null;
-  }
-  const now = new Date().toISOString();
-  const row = db.prepare(`
-    INSERT INTO graph_nodes (node_type, value, label, risk_level, first_seen, last_seen)
-    VALUES (?, ?, ?, ?, ?, ?)
-    ON CONFLICT(node_type, value) DO UPDATE SET
-      label = excluded.label,
-      risk_level = CASE
-        WHEN graph_nodes.risk_level = 'high' OR excluded.risk_level = 'high' THEN 'high'
-        WHEN graph_nodes.risk_level = 'medium' OR excluded.risk_level = 'medium' THEN 'medium'
-        ELSE excluded.risk_level
-      END,
-      last_seen = excluded.last_seen
-    RETURNING id
-  `).get(type, normalized, graphLabel(type, normalized), riskLevel, now, now);
-  return row.id;
-}
-
-function addGraphEdge(sourceId, targetId, relationship, caseId, scanId, evidenceRef = null) {
-  if (!sourceId || !targetId) {
-    return;
-  }
-  db.prepare(`
-    INSERT INTO graph_edges (source_node_id, target_node_id, relationship, case_id, scan_id, evidence_ref, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(sourceId, targetId, relationship, caseId, scanId, evidenceRef, new Date().toISOString());
-}
-
-function dnsValues(record) {
-  return record?.ok && Array.isArray(record.value) ? record.value : [];
-}
-
-function buildCaseGraph(result, caseId, scanId, riskLevel) {
-  const caseNode = upsertGraphNode("case", result.case?.caseNumber || `Case ${caseId}`, riskLevel);
-  const targetNode = upsertGraphNode(result.target.type, result.target.normalized, riskLevel);
-  addGraphEdge(caseNode, targetNode, "targets", caseId, scanId, "target");
-
-  const host = result.target.host;
-  let domainNode = null;
-  if (host && !net.isIP(host)) {
-    domainNode = upsertGraphNode("domain", host, riskLevel);
-    addGraphEdge(targetNode, domainNode, "uses domain", caseId, scanId, "target.host");
-  }
-
-  for (const ip of [...dnsValues(result.dns?.A), ...dnsValues(result.dns?.AAAA), ...dnsValues(result.dns?.IP)]) {
-    const ipNode = upsertGraphNode("ip", ip, riskLevel);
-    addGraphEdge(domainNode || targetNode, ipNode, "resolves to", caseId, scanId, "dns");
-  }
-
-  for (const ns of dnsValues(result.dns?.NS)) {
-    const nsNode = upsertGraphNode("nameserver", ns, "info");
-    addGraphEdge(domainNode || targetNode, nsNode, "uses nameserver", caseId, scanId, "dns.NS");
-  }
-
-  if (result.rdap?.ok) {
-    const rdapNode = upsertGraphNode("rdap_domain", result.rdap.domain, result.rdap.ageDays !== null && result.rdap.ageDays < 30 ? "medium" : "info");
-    addGraphEdge(domainNode || targetNode, rdapNode, "has rdap record", caseId, scanId, "rdap");
-    if (result.rdap.registrar) {
-      const registrarNode = upsertGraphNode("registrar", result.rdap.registrar, "info");
-      addGraphEdge(rdapNode, registrarNode, "registered through", caseId, scanId, "rdap.registrar");
-    }
-    for (const ns of result.rdap.nameservers || []) {
-      const nsNode = upsertGraphNode("nameserver", ns, "info");
-      addGraphEdge(rdapNode, nsNode, "rdap nameserver", caseId, scanId, "rdap.nameservers");
-    }
-  }
-
-  if (result.ipRdap?.ok) {
-    const ipNode = upsertGraphNode("ip", result.ipRdap.ip, riskLevel);
-    addGraphEdge(domainNode || targetNode, ipNode, "uses primary ip", caseId, scanId, "ipRdap.ip");
-    const networkLabel = result.ipRdap.name || result.ipRdap.handle;
-    if (networkLabel) {
-      const networkNode = upsertGraphNode("network", networkLabel, "info");
-      addGraphEdge(ipNode, networkNode, "allocated to", caseId, scanId, "ipRdap.name");
-    }
-    for (const entity of result.ipRdap.entities || []) {
-      const orgNode = upsertGraphNode("organization", entity, "info");
-      addGraphEdge(ipNode, orgNode, "rdap entity", caseId, scanId, "ipRdap.entities");
-    }
-  }
-
-  for (const mx of dnsValues(result.dns?.MX)) {
-    const mxNode = upsertGraphNode("mail_server", mx.exchange || JSON.stringify(mx), "info");
-    addGraphEdge(domainNode || targetNode, mxNode, "uses mail server", caseId, scanId, "dns.MX");
-  }
-
-  for (const hop of result.http?.chain || []) {
-    const hopNode = upsertGraphNode("url", hop.url, hop.ok && hop.statusCode >= 400 ? "medium" : "info");
-    addGraphEdge(targetNode, hopNode, hop.url === result.target.normalized ? "requested as" : "redirect hop", caseId, scanId, "http.chain");
-    if (hop.location) {
-      const locationNode = upsertGraphNode("url", hop.location, "medium");
-      addGraphEdge(hopNode, locationNode, "redirects to", caseId, scanId, "http.location");
-    }
-  }
-
-  if (result.tls?.fingerprint256) {
-    const certNode = upsertGraphNode("tls_certificate", result.tls.fingerprint256, result.tls.authorized ? "info" : "high");
-    addGraphEdge(domainNode || targetNode, certNode, "presents certificate", caseId, scanId, "tls");
-  }
-
-  const source = result.source || {};
-  const sourceGroups = [
-    ["email", source.emails, "contains email"],
-    ["url", source.links, "links to"],
-    ["ip", source.ips, "contains ip"],
-    ["phone", source.phones, "contains phone"],
-    ["crypto_wallet", source.cryptoWallets, "contains wallet"],
-    ["social_handle", source.socialHandles, "contains handle"],
-    ["form_action", source.formActions, "submits to"],
-  ];
-  for (const [type, values, relationship] of sourceGroups) {
-    for (const value of values || []) {
-      const node = upsertGraphNode(type, value, type === "crypto_wallet" || type === "form_action" ? "medium" : "info");
-      addGraphEdge(targetNode, node, relationship, caseId, scanId, "source");
-    }
-  }
-}
-
-function saveCase(result) {
-  const riskLevel = getRiskLevel(result.signals || []);
-  const statement = db.prepare(`
-    INSERT INTO cases (normalized_target, target_type, risk_level, scanned_at, result_json, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(normalized_target) DO UPDATE SET
-      target_type = excluded.target_type,
-      risk_level = excluded.risk_level,
-      scanned_at = excluded.scanned_at,
-      result_json = excluded.result_json,
-      updated_at = excluded.updated_at
-    RETURNING id, case_number
-  `);
-  const now = new Date().toISOString();
-  const resultJson = JSON.stringify(result);
-  const row = statement.get(
-    result.target.normalized,
-    result.target.type,
-    riskLevel,
-    result.scannedAt,
-    resultJson,
-    now,
-    now
-  );
-  if (!row.case_number) {
-    db.prepare("UPDATE cases SET case_number = ? WHERE id = ?").run(`SNF-${String(row.id).padStart(6, "0")}`, row.id);
-  }
-
-  const finalResultJson = JSON.stringify({ ...result, caseId: row.id });
-  const scan = db.prepare(`
-    INSERT INTO scans (case_id, scanned_at, risk_level, result_json, result_sha256, source_sha256, headers_sha256)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-    RETURNING id
-  `).get(
-    row.id,
-    result.scannedAt,
-    riskLevel,
-    finalResultJson,
-    sha256(finalResultJson),
-    result.evidence?.artifacts?.source?.sha256 || null,
-    result.evidence?.artifacts?.httpHeaders?.sha256 || null
-  );
-  logAudit(row.id, scan.id, "scan.created", { normalizedTarget: result.target.normalized, riskLevel });
-  const savedResult = { ...result, caseId: row.id, scanId: scan.id };
-  savedResult.case = { caseNumber: row.case_number || `SNF-${String(row.id).padStart(6, "0")}` };
-  db.prepare("UPDATE cases SET result_json = ? WHERE id = ?").run(JSON.stringify(savedResult), row.id);
-  db.prepare("UPDATE scans SET result_json = ?, result_sha256 = ? WHERE id = ?")
-    .run(JSON.stringify(savedResult), sha256(JSON.stringify(savedResult)), scan.id);
-  buildCaseGraph(savedResult, row.id, scan.id, riskLevel);
-  return { caseId: row.id, scanId: scan.id };
-}
-
 function listCases() {
-  const rows = db.prepare(`
-    SELECT id, case_number, normalized_target, target_type, risk_level, scanned_at, status, scam_category, examiner
-    FROM cases
-    ORDER BY scanned_at DESC
-    LIMIT 100
-  `).all();
-
-  return rows.map((row) => ({
-    id: row.id,
-    caseNumber: row.case_number,
-    normalizedTarget: row.normalized_target,
-    targetType: row.target_type,
-    riskLevel: row.risk_level,
-    scannedAt: row.scanned_at,
-    status: row.status,
-    scamCategory: row.scam_category,
-    examiner: row.examiner,
-  }));
+  return [];
 }
 
 function getCase(id) {
-  const row = db.prepare("SELECT * FROM cases WHERE id = ?").get(id);
-  if (!row) {
-    return null;
-  }
-  const result = JSON.parse(row.result_json);
-  result.case = mapCaseRow(row);
-  result.scans = db.prepare("SELECT id, scanned_at, risk_level, result_sha256, source_sha256, headers_sha256 FROM scans WHERE case_id = ? ORDER BY scanned_at DESC").all(id)
-    .map((scan) => ({
-      id: scan.id,
-      scannedAt: scan.scanned_at,
-      riskLevel: scan.risk_level,
-      resultSha256: scan.result_sha256,
-      sourceSha256: scan.source_sha256,
-      headersSha256: scan.headers_sha256,
-    }));
-  result.auditLog = db.prepare("SELECT action, created_at, detail_json FROM audit_log WHERE case_id = ? ORDER BY created_at DESC LIMIT 50").all(id)
-    .map((entry) => ({
-      action: entry.action,
-      createdAt: entry.created_at,
-      detail: entry.detail_json ? JSON.parse(entry.detail_json) : null,
-    }));
-  return result;
-}
-
-function mapCaseRow(row) {
-  return {
-    id: row.id,
-    caseNumber: row.case_number,
-    title: row.title,
-    status: row.status,
-    scamCategory: row.scam_category,
-    examiner: row.examiner,
-    sourceOfReport: row.source_of_report,
-    victim: row.victim,
-    lossAmount: row.loss_amount,
-    jurisdiction: row.jurisdiction,
-    notes: row.notes,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
+  return null;
 }
 
 function updateCase(id, updates) {
-  const allowed = {
-    title: "title",
-    status: "status",
-    scamCategory: "scam_category",
-    examiner: "examiner",
-    sourceOfReport: "source_of_report",
-    victim: "victim",
-    lossAmount: "loss_amount",
-    jurisdiction: "jurisdiction",
-    notes: "notes",
-  };
-  const assignments = [];
-  const values = [];
-  for (const [key, column] of Object.entries(allowed)) {
-    if (Object.hasOwn(updates, key)) {
-      assignments.push(`${column} = ?`);
-      values.push(String(updates[key] ?? "").slice(0, 5000));
-    }
-  }
-  if (!assignments.length) {
-    return getCase(id);
-  }
-  assignments.push("updated_at = ?");
-  values.push(new Date().toISOString(), id);
-  db.prepare(`UPDATE cases SET ${assignments.join(", ")} WHERE id = ?`).run(...values);
-  logAudit(id, null, "case.updated", { fields: Object.keys(updates) });
-  return getCase(id);
+  return null;
 }
 
 function exportCase(id) {
-  const result = getCase(id);
-  if (!result) {
-    return null;
-  }
-  return {
-    exportedAt: new Date().toISOString(),
-    tool: { name: "ScamIntel", version: TOOL_VERSION },
-    case: result.case,
-    latestResult: result,
-    scans: result.scans,
-    auditLog: result.auditLog,
-  };
+  return null;
 }
 
 function getCaseGraph(id) {
-  const nodes = db.prepare(`
-    SELECT DISTINCT n.id, n.node_type, n.value, n.label, n.risk_level, n.first_seen, n.last_seen
-    FROM graph_nodes n
-    JOIN graph_edges e ON e.source_node_id = n.id OR e.target_node_id = n.id
-    WHERE e.case_id = ?
-    ORDER BY n.node_type, n.label
-  `).all(id).map((node) => ({
-    id: node.id,
-    type: node.node_type,
-    value: node.value,
-    label: node.label,
-    riskLevel: node.risk_level,
-    firstSeen: node.first_seen,
-    lastSeen: node.last_seen,
-  }));
-
-  const edges = db.prepare(`
-    SELECT e.id, e.source_node_id, e.target_node_id, e.relationship, e.scan_id, e.evidence_ref, e.created_at
-    FROM graph_edges e
-    WHERE e.case_id = ?
-    ORDER BY e.created_at
-  `).all(id).map((edge) => ({
-    id: edge.id,
-    source: edge.source_node_id,
-    target: edge.target_node_id,
-    relationship: edge.relationship,
-    scanId: edge.scan_id,
-    evidenceRef: edge.evidence_ref,
-    createdAt: edge.created_at,
-  }));
-
-  return { nodes, edges };
+  return { nodes: [], edges: [] };
 }
 
 function getGlobalGraph(limit = 500) {
-  const edges = db.prepare(`
-    SELECT e.id, e.source_node_id, e.target_node_id, e.relationship, e.case_id, e.scan_id, e.evidence_ref, e.created_at
-    FROM graph_edges e
-    ORDER BY e.created_at DESC
-    LIMIT ?
-  `).all(limit).map((edge) => ({
-    id: edge.id,
-    source: edge.source_node_id,
-    target: edge.target_node_id,
-    relationship: edge.relationship,
-    caseId: edge.case_id,
-    scanId: edge.scan_id,
-    evidenceRef: edge.evidence_ref,
-    createdAt: edge.created_at,
-  }));
-
-  const nodeIds = [...new Set(edges.flatMap((edge) => [edge.source, edge.target]))];
-  if (!nodeIds.length) {
-    return { nodes: [], edges: [] };
-  }
-  const placeholders = nodeIds.map(() => "?").join(",");
-  const nodes = db.prepare(`
-    SELECT id, node_type, value, label, risk_level, first_seen, last_seen
-    FROM graph_nodes
-    WHERE id IN (${placeholders})
-    ORDER BY node_type, label
-  `).all(...nodeIds).map((node) => ({
-    id: node.id,
-    type: node.node_type,
-    value: node.value,
-    label: node.label,
-    riskLevel: node.risk_level,
-    firstSeen: node.first_seen,
-    lastSeen: node.last_seen,
-  }));
-  return { nodes, edges };
+  return { nodes: [], edges: [] };
 }
 
 function getPivots() {
-  const rows = db.prepare(`
-    SELECT n.id, n.node_type, n.value, n.label, n.risk_level,
-      COUNT(DISTINCT e.case_id) AS case_count,
-      COUNT(e.id) AS edge_count,
-      MIN(e.created_at) AS first_seen,
-      MAX(e.created_at) AS last_seen
-    FROM graph_nodes n
-    JOIN graph_edges e ON e.source_node_id = n.id OR e.target_node_id = n.id
-    WHERE n.node_type NOT IN ('case')
-    GROUP BY n.id
-    HAVING case_count > 1 OR edge_count > 1
-    ORDER BY case_count DESC, edge_count DESC, n.node_type, n.label
-    LIMIT 100
-  `).all();
-
-  return rows.map((row) => ({
-    nodeId: row.id,
-    type: row.node_type,
-    value: row.value,
-    label: row.label,
-    riskLevel: row.risk_level,
-    caseCount: row.case_count,
-    edgeCount: row.edge_count,
-    firstSeen: row.first_seen,
-    lastSeen: row.last_seen,
-  }));
+  return [];
 }
 
 function getPivotCases(nodeId) {
-  const rows = db.prepare(`
-    SELECT DISTINCT c.id, c.case_number, c.normalized_target, c.risk_level, c.scanned_at, c.status
-    FROM cases c
-    JOIN graph_edges e ON e.case_id = c.id
-    WHERE e.source_node_id = ? OR e.target_node_id = ?
-    ORDER BY c.scanned_at DESC
-  `).all(nodeId, nodeId);
-  return rows.map((row) => ({
-    id: row.id,
-    caseNumber: row.case_number,
-    normalizedTarget: row.normalized_target,
-    riskLevel: row.risk_level,
-    scannedAt: row.scanned_at,
-    status: row.status,
-  }));
+  return [];
 }
 
 function clearCases() {
-  db.prepare("DELETE FROM graph_edges").run();
-  db.prepare("DELETE FROM graph_nodes").run();
-  db.prepare("DELETE FROM audit_log").run();
-  db.prepare("DELETE FROM scans").run();
-  db.prepare("DELETE FROM cases").run();
+  return true;
 }
 
 function normalizeTarget(raw) {
@@ -1574,9 +1085,6 @@ async function investigate(rawTarget) {
     sha256: sha256(JSON.stringify(result)),
     bytes: Buffer.byteLength(JSON.stringify(result), "utf8"),
   };
-  const saved = saveCase(result);
-  result.caseId = saved.caseId;
-  result.scanId = saved.scanId;
   return result;
 }
 
@@ -1726,17 +1234,10 @@ server.on("error", (error) => {
 });
 
 if (require.main === module) {
-  initDatabase()
-    .then(() => {
-      server.listen(PORT, () => {
-        console.log(`ScamIntel investigation platform running at http://localhost:${PORT}`);
-        console.log(`Cases database: ${DB_PATH}`);
-      });
-    })
-    .catch((error) => {
-      console.error(`Unable to initialize database: ${error.message}`);
-      process.exit(1);
-    });
+  server.listen(PORT, () => {
+    console.log(`ScamIntel investigation platform running at http://localhost:${PORT}`);
+    console.log("Persistence disabled: investigations are not saved to a database.");
+  });
 }
 
 module.exports = {

@@ -14,15 +14,11 @@ const sourceDetails = document.querySelector("#source-details");
 const rawJson = document.querySelector("#raw-json");
 const copyJson = document.querySelector("#copy-json");
 const exportCase = document.querySelector("#export-case");
-const historyList = document.querySelector("#history-list");
-const clearHistory = document.querySelector("#clear-history");
 const caseForm = document.querySelector("#case-form");
 const evidenceDetails = document.querySelector("#evidence-details");
 const graphSummary = document.querySelector("#graph-summary");
 const caseGraph = document.querySelector("#case-graph");
 const graphNodeDetails = document.querySelector("#graph-node-details");
-const globalGraphButton = document.querySelector("#global-graph-button");
-const pivotList = document.querySelector("#pivot-list");
 
 let currentResult = null;
 
@@ -46,85 +42,6 @@ function formatValue(value) {
     return JSON.stringify(value);
   }
   return String(value);
-}
-
-async function loadHistory() {
-  const response = await fetch("/api/cases");
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || "Unable to load cases.");
-  }
-  return data.cases;
-}
-
-async function renderHistory() {
-  let items = [];
-  try {
-    items = await loadHistory();
-  } catch (error) {
-    historyList.innerHTML = `<p class="status-line">${escapeHtml(error.message)}</p>`;
-    return;
-  }
-
-  if (!items.length) {
-    historyList.innerHTML = `<p class="status-line">No saved cases yet.</p>`;
-    return;
-  }
-
-  historyList.innerHTML = items
-    .map((item) => `
-      <button class="history-item" type="button" data-id="${item.id}">
-        <strong>${escapeHtml(item.caseNumber || `Case ${item.id}`)}</strong>
-        <span>${escapeHtml(item.normalizedTarget)}</span>
-        <span>${escapeHtml(item.riskLevel.toUpperCase())} | ${escapeHtml(item.status || "open")} | ${escapeHtml(new Date(item.scannedAt).toLocaleString())}</span>
-      </button>
-    `)
-    .join("");
-}
-
-async function loadCase(id) {
-  const response = await fetch(`/api/cases/${id}`);
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || "Unable to load case.");
-  }
-  return data;
-}
-
-async function loadGraph(id) {
-  const response = await fetch(`/api/cases/${id}/graph`);
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || "Unable to load graph.");
-  }
-  return data;
-}
-
-async function loadGlobalGraph() {
-  const response = await fetch("/api/graph");
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || "Unable to load global graph.");
-  }
-  return data;
-}
-
-async function loadPivots() {
-  const response = await fetch("/api/pivots");
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || "Unable to load IOC pivots.");
-  }
-  return data.pivots;
-}
-
-async function loadPivotCases(nodeId) {
-  const response = await fetch(`/api/pivots/${nodeId}/cases`);
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || "Unable to load pivot cases.");
-  }
-  return data.cases;
 }
 
 function renderDefinitionList(node, entries) {
@@ -207,7 +124,15 @@ function renderTls(result) {
   ]);
 }
 
-function renderIndicatorGroup(title, values) {
+function truncateMiddle(value, start = 18, end = 12) {
+  const text = String(value || "");
+  if (text.length <= start + end + 3) {
+    return text;
+  }
+  return `${text.slice(0, start)}...${text.slice(-end)}`;
+}
+
+function renderIndicatorGroup(title, values, options = {}) {
   if (!values?.length) {
     return "";
   }
@@ -216,20 +141,33 @@ function renderIndicatorGroup(title, values) {
     const value = typeof item === "object" ? item.value : item;
     const text = escapeHtml(value);
     const chain = typeof item === "object" ? item.chain : null;
+    const addressType = typeof item === "object" ? item.addressType : null;
     const href = typeof item === "object" ? item.explorerUrl : (/^0x[a-fA-F0-9]{40}$/.test(value) ? `https://etherscan.io/address/${encodeURIComponent(value)}` : null);
     const label = chain === "bitcoin" ? "BTC" : chain === "ethereum" ? "ETH" : "Explorer";
+    const displayText = options.compact ? escapeHtml(truncateMiddle(value)) : text;
+    const meta = [label, addressType].filter(Boolean).join(" | ");
     if (href) {
-      return `<a class="indicator-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer"><code>${text}</code><span>${escapeHtml(label)}</span></a>`;
+      return `<a class="indicator-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" title="${text}"><code>${displayText}</code><span>${escapeHtml(meta)}</span></a>`;
     }
-    return `<code>${text}</code>`;
+    return `<code title="${text}">${displayText}</code>`;
   };
 
+  const isLong = values.length > (options.openLimit || 8);
+  const openAttribute = isLong ? "" : " open";
+  const preview = values.slice(0, 3).map((item) => typeof item === "object" ? item.value : item).map((value) => truncateMiddle(value, 14, 8)).join(" | ");
+
   return `
-    <li>
-      <span class="record-title">${escapeHtml(title)} (${values.length})</span>
-      <div class="indicator-list">
-        ${values.map(renderValue).join("")}
-      </div>
+    <li class="indicator-group ${options.kind ? `indicator-group-${escapeHtml(options.kind)}` : ""}">
+      <details${openAttribute}>
+        <summary>
+          <span class="record-title">${escapeHtml(title)}</span>
+          <span class="indicator-count">${values.length}</span>
+          ${isLong ? `<span class="indicator-preview">${escapeHtml(preview)}</span>` : ""}
+        </summary>
+        <div class="indicator-list ${options.compact ? "indicator-list-compact" : ""}">
+          ${values.map(renderValue).join("")}
+        </div>
+      </details>
     </li>
   `;
 }
@@ -255,13 +193,13 @@ function renderSource(result) {
   }
 
   const groups = [
-    renderIndicatorGroup("Emails", result.source.emails),
-    renderIndicatorGroup("Links", result.source.links),
-    renderIndicatorGroup("IP addresses", result.source.ips),
-    renderIndicatorGroup("Phone numbers", result.source.phones),
-    renderIndicatorGroup("Crypto wallets", result.source.cryptoWalletDetails || result.source.cryptoWallets),
-    renderIndicatorGroup("Social handles", result.source.socialHandles),
-    renderIndicatorGroup("Form actions", result.source.formActions),
+    renderIndicatorGroup("Crypto wallets", result.source.cryptoWalletDetails || result.source.cryptoWallets, { compact: true, kind: "wallets", openLimit: 5 }),
+    renderIndicatorGroup("Emails", result.source.emails, { compact: true }),
+    renderIndicatorGroup("Phone numbers", result.source.phones, { compact: true }),
+    renderIndicatorGroup("Social handles", result.source.socialHandles, { compact: true }),
+    renderIndicatorGroup("IP addresses", result.source.ips, { compact: true }),
+    renderIndicatorGroup("Form actions", result.source.formActions, { compact: true }),
+    renderIndicatorGroup("Links", result.source.links, { compact: true, kind: "links", openLimit: 5 }),
   ].join("");
 
   sourceDetails.innerHTML = `
@@ -280,8 +218,8 @@ function renderEvidence(result) {
   evidenceDetails.innerHTML = `
     <div class="evidence-grid">
       <dl class="compact-list">
-        <dt>Case</dt><dd>${escapeHtml(result.case?.caseNumber || result.caseId || "Not assigned")}</dd>
-        <dt>Scan ID</dt><dd>${escapeHtml(result.scanId || scans[0]?.id || "Not available")}</dd>
+        <dt>Case</dt><dd>${escapeHtml(result.case?.caseNumber || result.caseId || "Unsaved scan")}</dd>
+        <dt>Scan ID</dt><dd>${escapeHtml(result.scanId || scans[0]?.id || "Not persisted")}</dd>
         <dt>Tool</dt><dd>Sniffer ${escapeHtml(result.evidence?.collection?.toolVersion || "")}</dd>
         <dt>Collected UTC</dt><dd>${escapeHtml(result.evidence?.collection?.collectedAtUtc || result.scannedAt)}</dd>
       </dl>
@@ -425,32 +363,12 @@ function renderGraph(graph, scope = "Case") {
   });
 }
 
-async function renderPivots() {
-  let pivots = [];
-  try {
-    pivots = await loadPivots();
-  } catch (error) {
-    pivotList.innerHTML = `<p class="status-line">${escapeHtml(error.message)}</p>`;
-    return;
-  }
-  if (!pivots.length) {
-    pivotList.innerHTML = `<p class="status-line">No reused indicators yet.</p>`;
-    return;
-  }
-  pivotList.innerHTML = pivots.map((pivot) => `
-    <button class="pivot-item" type="button" data-node-id="${pivot.nodeId}">
-      <strong>${escapeHtml(pivot.label)}</strong>
-      <span>${escapeHtml(pivot.type)} | ${pivot.caseCount} case(s) | ${pivot.edgeCount} link(s)</span>
-    </button>
-  `).join("");
-}
-
 function renderResult(result) {
   currentResult = result;
   emptyState.classList.add("hidden");
   results.classList.remove("hidden");
   resultTitle.textContent = result.target.normalized;
-  resultMeta.textContent = `${result.case?.caseNumber || `Case ${result.caseId || "new"}`} | Scanned ${new Date(result.scannedAt).toLocaleString()} as ${result.target.type.toUpperCase()}`;
+  resultMeta.textContent = `Unsaved scan | Scanned ${new Date(result.scannedAt).toLocaleString()} as ${result.target.type.toUpperCase()}`;
 
   setCaseForm(result);
   renderSignals(result);
@@ -476,17 +394,7 @@ function renderResult(result) {
   renderSource(result);
   renderEvidence(result);
   rawJson.textContent = JSON.stringify(result, null, 2);
-  if (result.caseId) {
-    loadGraph(result.caseId)
-      .then(renderGraph)
-      .catch((error) => {
-        graphSummary.textContent = "";
-        caseGraph.innerHTML = `<p>${escapeHtml(error.message)}</p>`;
-        renderGraphDetails(null);
-      });
-  } else {
-    renderGraph({ nodes: [], edges: [] });
-  }
+  renderGraph({ nodes: [], edges: [] });
 }
 
 async function investigate(target) {
@@ -514,102 +422,11 @@ form.addEventListener("submit", async (event) => {
   try {
     const result = await investigate(target);
     renderResult(result);
-    await renderHistory();
-    await renderPivots();
     statusLine.textContent = "Investigation complete.";
   } catch (error) {
     statusLine.textContent = error.message;
   } finally {
     form.querySelector("button").disabled = false;
-  }
-});
-
-historyList.addEventListener("click", async (event) => {
-  const button = event.target.closest(".history-item");
-  if (!button) {
-    return;
-  }
-  try {
-    const item = await loadCase(button.dataset.id);
-    renderResult(item);
-    statusLine.textContent = "Case loaded.";
-  } catch (error) {
-    statusLine.textContent = error.message;
-  }
-});
-
-clearHistory.addEventListener("click", async () => {
-  const response = await fetch("/api/cases", { method: "DELETE" });
-  if (response.ok) {
-    await renderHistory();
-    await renderPivots();
-    emptyState.classList.remove("hidden");
-    results.classList.add("hidden");
-    currentResult = null;
-    statusLine.textContent = "Cases cleared.";
-  } else {
-    statusLine.textContent = "Unable to clear cases.";
-  }
-});
-
-globalGraphButton.addEventListener("click", async () => {
-  try {
-    const graph = await loadGlobalGraph();
-    emptyState.classList.add("hidden");
-    results.classList.remove("hidden");
-    resultTitle.textContent = "Global Intelligence Graph";
-    resultMeta.textContent = "All stored case relationships";
-    signals.innerHTML = "";
-    caseForm.reset();
-    identityList.innerHTML = "";
-    httpDetails.innerHTML = "<p>Select a case to view HTTP evidence.</p>";
-    dnsDetails.innerHTML = "<p>Select a case to view DNS evidence.</p>";
-    tlsDetails.innerHTML = "<p>Select a case to view TLS evidence.</p>";
-    sourceDetails.innerHTML = "<p>Select a case to view source extracts.</p>";
-    evidenceDetails.innerHTML = "<p>Select a case to view scan hashes and audit entries.</p>";
-    rawJson.textContent = JSON.stringify(graph, null, 2);
-    renderGraph(graph, "Global");
-    statusLine.textContent = "Global graph loaded.";
-  } catch (error) {
-    statusLine.textContent = error.message;
-  }
-});
-
-pivotList.addEventListener("click", async (event) => {
-  const button = event.target.closest(".pivot-item");
-  if (!button) {
-    return;
-  }
-  try {
-    const cases = await loadPivotCases(button.dataset.nodeId);
-    graphNodeDetails.innerHTML = `
-      <h4>Seen In Cases</h4>
-      <ul class="record-list">
-        ${cases.map((item) => `
-          <li>
-            <span class="record-title">${escapeHtml(item.caseNumber || `Case ${item.id}`)} | ${escapeHtml(item.riskLevel)}</span>
-            <button class="inline-case-link" type="button" data-case-id="${item.id}">${escapeHtml(item.normalizedTarget)}</button>
-          </li>
-        `).join("")}
-      </ul>
-    `;
-    statusLine.textContent = "Pivot cases loaded.";
-  } catch (error) {
-    statusLine.textContent = error.message;
-  }
-});
-
-graphNodeDetails.addEventListener("click", async (event) => {
-  const button = event.target.closest(".inline-case-link");
-  if (!button) {
-    return;
-  }
-  try {
-    const item = await loadCase(button.dataset.caseId);
-    renderResult(item);
-    statusLine.textContent = "Case loaded.";
-  } catch (error) {
-    statusLine.textContent = error.message;
   }
 });
 
@@ -625,32 +442,29 @@ copyJson.addEventListener("click", async () => {
 });
 
 exportCase.addEventListener("click", () => {
-  if (!currentResult?.caseId) {
+  if (!currentResult) {
     return;
   }
-  window.location.href = `/api/cases/${currentResult.caseId}/export`;
+  const blob = new Blob([JSON.stringify({
+    exportedAt: new Date().toISOString(),
+    tool: { name: "ScamIntel" },
+    result: currentResult,
+  }, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `scamintel-scan-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
 });
 
 caseForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!currentResult?.caseId) {
+  if (!currentResult) {
+    statusLine.textContent = "Run an investigation first.";
     return;
   }
   const updates = Object.fromEntries(new FormData(caseForm).entries());
-  const response = await fetch(`/api/cases/${currentResult.caseId}`, {
-    method: "PATCH",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(updates),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    statusLine.textContent = data.error || "Unable to save metadata.";
-    return;
-  }
-  renderResult(data);
-  await renderHistory();
-  statusLine.textContent = "Case metadata saved.";
+  currentResult.case = { ...(currentResult.case || {}), ...updates };
+  rawJson.textContent = JSON.stringify(currentResult, null, 2);
+  statusLine.textContent = "Applied to the current scan.";
 });
-
-renderHistory();
-renderPivots();

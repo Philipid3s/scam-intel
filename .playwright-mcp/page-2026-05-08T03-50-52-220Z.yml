@@ -1,0 +1,264 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - paragraph [ref=e5]: Suspicious infrastructure triage
+      - heading "ScamIntel" [level=1] [ref=e6]
+      - paragraph [ref=e7]: Trace scam infrastructure, preserve evidence, and connect URLs, IPs, emails, wallets, and other indicators.
+    - generic [ref=e8]:
+      - generic [ref=e9]: Target
+      - generic [ref=e10]:
+        - textbox "Target" [ref=e11]:
+          - /placeholder: https://example.com/login or 8.8.8.8
+        - button "Investigate" [ref=e12] [cursor=pointer]
+      - status [ref=e13]
+  - generic [ref=e14]:
+    - complementary [ref=e15]:
+      - generic [ref=e16]:
+        - heading "Cases" [level=2] [ref=e17]
+        - generic [ref=e18]:
+          - button "Global Graph" [ref=e19] [cursor=pointer]
+          - button "Clear" [ref=e20] [cursor=pointer]
+      - button "SNF-000008 https://bgwealthsharing.com/ INFO | open | 5/8/2026, 11:47:41 AM" [ref=e22] [cursor=pointer]:
+        - strong [ref=e23]: SNF-000008
+        - generic [ref=e24]: https://bgwealthsharing.com/
+        - generic [ref=e25]: INFO | open | 5/8/2026, 11:47:41 AM
+      - generic [ref=e26]:
+        - heading "IOC Reuse" [level=3] [ref=e27]
+        - generic [ref=e28]:
+          - button "https://bgwealthsharing.com/ url | 1 case(s) | 139 link(s)" [ref=e29] [cursor=pointer]:
+            - strong [ref=e30]: https://bgwealthsharing.com/
+            - generic [ref=e31]: url | 1 case(s) | 139 link(s)
+          - button "bgwealthsharing.com domain | 1 case(s) | 28 link(s)" [ref=e32] [cursor=pointer]:
+            - strong [ref=e33]: bgwealthsharing.com
+            - generic [ref=e34]: domain | 1 case(s) | 28 link(s)
+          - button "bgwealthsharing.com rdap_domain | 1 case(s) | 12 link(s)" [ref=e35] [cursor=pointer]:
+            - strong [ref=e36]: bgwealthsharing.com
+            - generic [ref=e37]: rdap_domain | 1 case(s) | 12 link(s)
+          - button "104.21.21.220 ip | 1 case(s) | 9 link(s)" [ref=e38] [cursor=pointer]:
+            - strong [ref=e39]: 104.21.21.220
+            - generic [ref=e40]: ip | 1 case(s) | 9 link(s)
+          - button "172.67.200.211 ip | 1 case(s) | 3 link(s)" [ref=e41] [cursor=pointer]:
+            - strong [ref=e42]: 172.67.200.211
+            - generic [ref=e43]: ip | 1 case(s) | 3 link(s)
+          - button "2606:4700:3035::ac43:c8d3 ip | 1 case(s) | 3 link(s)" [ref=e44] [cursor=pointer]:
+            - strong [ref=e45]: 2606:4700:3035::ac43:c8d3
+            - generic [ref=e46]: ip | 1 case(s) | 3 link(s)
+          - button "2606:4700:3036::6815:15dc ip | 1 case(s) | 3 link(s)" [ref=e47] [cursor=pointer]:
+            - strong [ref=e48]: 2606:4700:3036::6815:15dc
+            - generic [ref=e49]: ip | 1 case(s) | 3 link(s)
+          - button "NS1.FBI.SEIZED.GOV nameserver | 1 case(s) | 3 link(s)" [ref=e50] [cursor=pointer]:
+            - strong [ref=e51]: NS1.FBI.SEIZED.GOV
+            - generic [ref=e52]: nameserver | 1 case(s) | 3 link(s)
+          - button "NS2.FBI.SEIZED.GOV nameserver | 1 case(s) | 3 link(s)" [ref=e53] [cursor=pointer]:
+            - strong [ref=e54]: NS2.FBI.SEIZED.GOV
+            - generic [ref=e55]: nameserver | 1 case(s) | 3 link(s)
+          - button "ns1.fbi.seized.gov nameserver | 1 case(s) | 3 link(s)" [ref=e56] [cursor=pointer]:
+            - strong [ref=e57]: ns1.fbi.seized.gov
+            - generic [ref=e58]: nameserver | 1 case(s) | 3 link(s)
+          - button "ns2.fbi.seized.gov nameserver | 1 case(s) | 3 link(s)" [ref=e59] [cursor=pointer]:
+            - strong [ref=e60]: ns2.fbi.seized.gov
+            - generic [ref=e61]: nameserver | 1 case(s) | 3 link(s)
+          - button "GoDaddy.com, LLC registrar | 1 case(s) | 3 link(s)" [ref=e62] [cursor=pointer]:
+            - strong [ref=e63]: GoDaddy.com, LLC
+            - generic [ref=e64]: registrar | 1 case(s) | 3 link(s)
+          - button "2E:55:02:34:22:E9:71:F4:8F...0:95:E6:EC:57:5C:01:BE tls_certificate | 1 case(s) | 3 link(s)" [ref=e65] [cursor=pointer]:
+            - strong [ref=e66]: 2E:55:02:34:22:E9:71:F4:8F...0:95:E6:EC:57:5C:01:BE
+            - generic [ref=e67]: tls_certificate | 1 case(s) | 3 link(s)
+          - button "118NtN8H6vrl5oFtY6tHqy3NlEkjs6QzRBCG4wR crypto_wallet | 1 case(s) | 2 link(s)" [ref=e68] [cursor=pointer]:
+            - strong [ref=e69]: 118NtN8H6vrl5oFtY6tHqy3NlEkjs6QzRBCG4wR
+            - generic [ref=e70]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "12SyEBZjtKtEWP3dwPB6ZVc8ZNXwtPAU87ws crypto_wallet | 1 case(s) | 2 link(s)" [ref=e71] [cursor=pointer]:
+            - strong [ref=e72]: 12SyEBZjtKtEWP3dwPB6ZVc8ZNXwtPAU87ws
+            - generic [ref=e73]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "13aaPpGoo1swyqNEDglq6XgKWJqr2DtGWvpfaPrcyjip0oP2iu1 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e74] [cursor=pointer]:
+            - strong [ref=e75]: 13aaPpGoo1swyqNEDglq6XgKWJqr2DtGWvpfaPrcyjip0oP2iu1
+            - generic [ref=e76]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "13eZjgdRXuH7J6ibxxrhGQRprt crypto_wallet | 1 case(s) | 2 link(s)" [ref=e77] [cursor=pointer]:
+            - strong [ref=e78]: 13eZjgdRXuH7J6ibxxrhGQRprt
+            - generic [ref=e79]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1ABX8ewpqrJRpp8z2trr5dT9tqUYxi5KVl5nxH crypto_wallet | 1 case(s) | 2 link(s)" [ref=e80] [cursor=pointer]:
+            - strong [ref=e81]: 1ABX8ewpqrJRpp8z2trr5dT9tqUYxi5KVl5nxH
+            - generic [ref=e82]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1G8t7CyhXdLcXUqxxoPVmYgAfWvwVup crypto_wallet | 1 case(s) | 2 link(s)" [ref=e83] [cursor=pointer]:
+            - strong [ref=e84]: 1G8t7CyhXdLcXUqxxoPVmYgAfWvwVup
+            - generic [ref=e85]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1Gwmu4DiSKF72USsvqfL38Hg9DQB crypto_wallet | 1 case(s) | 2 link(s)" [ref=e86] [cursor=pointer]:
+            - strong [ref=e87]: 1Gwmu4DiSKF72USsvqfL38Hg9DQB
+            - generic [ref=e88]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1JrnPEPijXPF9z9o1zVbnUpM5HnSEqPwr5ZcPYqo crypto_wallet | 1 case(s) | 2 link(s)" [ref=e89] [cursor=pointer]:
+            - strong [ref=e90]: 1JrnPEPijXPF9z9o1zVbnUpM5HnSEqPwr5ZcPYqo
+            - generic [ref=e91]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1K9Q6vPZyuXitbHb9zJ56iuqjiKlBpx1XZ7Hn1cvw1SaquC5u crypto_wallet | 1 case(s) | 2 link(s)" [ref=e92] [cursor=pointer]:
+            - strong [ref=e93]: 1K9Q6vPZyuXitbHb9zJ56iuqjiKlBpx1XZ7Hn1cvw1SaquC5u
+            - generic [ref=e94]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1L4geKoVm0zS8mC3kHyswGcmvkVvumvuz4S crypto_wallet | 1 case(s) | 2 link(s)" [ref=e95] [cursor=pointer]:
+            - strong [ref=e96]: 1L4geKoVm0zS8mC3kHyswGcmvkVvumvuz4S
+            - generic [ref=e97]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1Pxldap4y1ucDSNJLn9zDxtCr2ArzT4a crypto_wallet | 1 case(s) | 2 link(s)" [ref=e98] [cursor=pointer]:
+            - strong [ref=e99]: 1Pxldap4y1ucDSNJLn9zDxtCr2ArzT4a
+            - generic [ref=e100]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1QBzSGS3DLJM23gdjUUeNp3Hvx crypto_wallet | 1 case(s) | 2 link(s)" [ref=e101] [cursor=pointer]:
+            - strong [ref=e102]: 1QBzSGS3DLJM23gdjUUeNp3Hvx
+            - generic [ref=e103]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1R8KNPm8uXxtp7t6wCSVfzRSK6rwd8WPBvxAYJ4d8S6bq02 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e104] [cursor=pointer]:
+            - strong [ref=e105]: 1R8KNPm8uXxtp7t6wCSVfzRSK6rwd8WPBvxAYJ4d8S6bq02
+            - generic [ref=e106]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1WbnPBp99ptv9rnYz4AbkVS0xRHq0anJ54NNv8 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e107] [cursor=pointer]:
+            - strong [ref=e108]: 1WbnPBp99ptv9rnYz4AbkVS0xRHq0anJ54NNv8
+            - generic [ref=e109]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1XmqSiJRlRvPJqhrfxl8S6szRnUpfKXgDea5TVLi crypto_wallet | 1 case(s) | 2 link(s)" [ref=e110] [cursor=pointer]:
+            - strong [ref=e111]: 1XmqSiJRlRvPJqhrfxl8S6szRnUpfKXgDea5TVLi
+            - generic [ref=e112]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1ZNizeUpKncegroPCGgah4p1630yyQtPM2Gb crypto_wallet | 1 case(s) | 2 link(s)" [ref=e113] [cursor=pointer]:
+            - strong [ref=e114]: 1ZNizeUpKncegroPCGgah4p1630yyQtPM2Gb
+            - generic [ref=e115]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1ZV3p5iVhtwRxmvqjUP2RfEXMiX9sAP8Aarn7r9kP crypto_wallet | 1 case(s) | 2 link(s)" [ref=e116] [cursor=pointer]:
+            - strong [ref=e117]: 1ZV3p5iVhtwRxmvqjUP2RfEXMiX9sAP8Aarn7r9kP
+            - generic [ref=e118]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1Zr9aV9EfkVZ6vcR3SXenyLDdRnK3NvJtYH14r7E crypto_wallet | 1 case(s) | 2 link(s)" [ref=e119] [cursor=pointer]:
+            - strong [ref=e120]: 1Zr9aV9EfkVZ6vcR3SXenyLDdRnK3NvJtYH14r7E
+            - generic [ref=e121]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1a1iE9xpV3BJbXUaE43BJFG9QSAWQsASMkZGfz8 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e122] [cursor=pointer]:
+            - strong [ref=e123]: 1a1iE9xpV3BJbXUaE43BJFG9QSAWQsASMkZGfz8
+            - generic [ref=e124]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1arpKqy3gChR50TfKzAAfMpVj3J4wAcp crypto_wallet | 1 case(s) | 2 link(s)" [ref=e125] [cursor=pointer]:
+            - strong [ref=e126]: 1arpKqy3gChR50TfKzAAfMpVj3J4wAcp
+            - generic [ref=e127]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1e2pm9fdR6n8DNcm1r4haxcn93...cV4lqytJq2pEnG66kP616p crypto_wallet | 1 case(s) | 2 link(s)" [ref=e128] [cursor=pointer]:
+            - strong [ref=e129]: 1e2pm9fdR6n8DNcm1r4haxcn93...cV4lqytJq2pEnG66kP616p
+            - generic [ref=e130]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1hlcdxisdvQdulMQkjnj1qXJm0aaWhtR crypto_wallet | 1 case(s) | 2 link(s)" [ref=e131] [cursor=pointer]:
+            - strong [ref=e132]: 1hlcdxisdvQdulMQkjnj1qXJm0aaWhtR
+            - generic [ref=e133]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1i6QXWpup3P6neawxcZ13TwabvUa crypto_wallet | 1 case(s) | 2 link(s)" [ref=e134] [cursor=pointer]:
+            - strong [ref=e135]: 1i6QXWpup3P6neawxcZ13TwabvUa
+            - generic [ref=e136]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1ijkq1Le6tyr4i1SDQdK8tDjC4...arqSXP3jmtbxR4il1i9kbd crypto_wallet | 1 case(s) | 2 link(s)" [ref=e137] [cursor=pointer]:
+            - strong [ref=e138]: 1ijkq1Le6tyr4i1SDQdK8tDjC4...arqSXP3jmtbxR4il1i9kbd
+            - generic [ref=e139]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1jA28Ht3rqfaivDxeTYHGL95TSfdaM6qeKq09mfPfxL crypto_wallet | 1 case(s) | 2 link(s)" [ref=e140] [cursor=pointer]:
+            - strong [ref=e141]: 1jA28Ht3rqfaivDxeTYHGL95TSfdaM6qeKq09mfPfxL
+            - generic [ref=e142]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1jHPzCjb5mB0ar2g6HNr2pJawjCZzJJ2UVUY crypto_wallet | 1 case(s) | 2 link(s)" [ref=e143] [cursor=pointer]:
+            - strong [ref=e144]: 1jHPzCjb5mB0ar2g6HNr2pJawjCZzJJ2UVUY
+            - generic [ref=e145]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1meZKuT5hwD60yVuWf7LlWMZxt crypto_wallet | 1 case(s) | 2 link(s)" [ref=e146] [cursor=pointer]:
+            - strong [ref=e147]: 1meZKuT5hwD60yVuWf7LlWMZxt
+            - generic [ref=e148]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1mf7DqehalJ5sumTnhdpP8JNfKn crypto_wallet | 1 case(s) | 2 link(s)" [ref=e149] [cursor=pointer]:
+            - strong [ref=e150]: 1mf7DqehalJ5sumTnhdpP8JNfKn
+            - generic [ref=e151]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1n8KmmaDpYVTeXA2xJyM96p6xqx1C crypto_wallet | 1 case(s) | 2 link(s)" [ref=e152] [cursor=pointer]:
+            - strong [ref=e153]: 1n8KmmaDpYVTeXA2xJyM96p6xqx1C
+            - generic [ref=e154]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1n8Wf2lvBHxm8aLrWnfDXUrma7 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e155] [cursor=pointer]:
+            - strong [ref=e156]: 1n8Wf2lvBHxm8aLrWnfDXUrma7
+            - generic [ref=e157]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1ntXysGrJs48Nenj4xtdKX46pf5nNaQuy6tVPUEC crypto_wallet | 1 case(s) | 2 link(s)" [ref=e158] [cursor=pointer]:
+            - strong [ref=e159]: 1ntXysGrJs48Nenj4xtdKX46pf5nNaQuy6tVPUEC
+            - generic [ref=e160]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1pY1AkbfnFMdx0alZiq87uAK3xt8NWDE4a crypto_wallet | 1 case(s) | 2 link(s)" [ref=e161] [cursor=pointer]:
+            - strong [ref=e162]: 1pY1AkbfnFMdx0alZiq87uAK3xt8NWDE4a
+            - generic [ref=e163]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1te58Djq2JxNXlwtNzp03r5y6vzt0PFNP crypto_wallet | 1 case(s) | 2 link(s)" [ref=e164] [cursor=pointer]:
+            - strong [ref=e165]: 1te58Djq2JxNXlwtNzp03r5y6vzt0PFNP
+            - generic [ref=e166]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1uW5vkt5obTWrp5EmKF1MtvMSs0REZBLAj crypto_wallet | 1 case(s) | 2 link(s)" [ref=e167] [cursor=pointer]:
+            - strong [ref=e168]: 1uW5vkt5obTWrp5EmKF1MtvMSs0REZBLAj
+            - generic [ref=e169]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1ukm9tL9ley2P0nKeJqFHCqljpNzi7Xs3ddG3 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e170] [cursor=pointer]:
+            - strong [ref=e171]: 1ukm9tL9ley2P0nKeJqFHCqljpNzi7Xs3ddG3
+            - generic [ref=e172]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1vTPCmr3SeG9Nt2uvtiT4tmhXu...kXh7UnT0inonE640pU4vnv crypto_wallet | 1 case(s) | 2 link(s)" [ref=e173] [cursor=pointer]:
+            - strong [ref=e174]: 1vTPCmr3SeG9Nt2uvtiT4tmhXu...kXh7UnT0inonE640pU4vnv
+            - generic [ref=e175]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "1x8afGHxK8SeLtR0v4b6TdMlt4ZtXAtJLiRT5duDtyUhj2 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e176] [cursor=pointer]:
+            - strong [ref=e177]: 1x8afGHxK8SeLtR0v4b6TdMlt4ZtXAtJLiRT5duDtyUhj2
+            - generic [ref=e178]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "308dfDngvR7XVN9vPcKNwyuTX9n crypto_wallet | 1 case(s) | 2 link(s)" [ref=e179] [cursor=pointer]:
+            - strong [ref=e180]: 308dfDngvR7XVN9vPcKNwyuTX9n
+            - generic [ref=e181]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "34teLvHPxJ8T6lHotpKjalqNvt crypto_wallet | 1 case(s) | 2 link(s)" [ref=e182] [cursor=pointer]:
+            - strong [ref=e183]: 34teLvHPxJ8T6lHotpKjalqNvt
+            - generic [ref=e184]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "39p648Np4k8GR6YkKf6F9ihYvd crypto_wallet | 1 case(s) | 2 link(s)" [ref=e185] [cursor=pointer]:
+            - strong [ref=e186]: 39p648Np4k8GR6YkKf6F9ihYvd
+            - generic [ref=e187]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3F8MvhvZtpWjW8HiG6hTy44bdAYkxwAeK crypto_wallet | 1 case(s) | 2 link(s)" [ref=e188] [cursor=pointer]:
+            - strong [ref=e189]: 3F8MvhvZtpWjW8HiG6hTy44bdAYkxwAeK
+            - generic [ref=e190]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3FzK015MxeWVjklj1q34q8Wan428QXuvatM01 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e191] [cursor=pointer]:
+            - strong [ref=e192]: 3FzK015MxeWVjklj1q34q8Wan428QXuvatM01
+            - generic [ref=e193]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3HjTwlpepwRPo738YxHcLiLb3ya crypto_wallet | 1 case(s) | 2 link(s)" [ref=e194] [cursor=pointer]:
+            - strong [ref=e195]: 3HjTwlpepwRPo738YxHcLiLb3ya
+            - generic [ref=e196]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3JqeNyoAAqufm57jpVuNf3YJ9KBDJpBt9 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e197] [cursor=pointer]:
+            - strong [ref=e198]: 3JqeNyoAAqufm57jpVuNf3YJ9KBDJpBt9
+            - generic [ref=e199]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3KMbeb5VPlLKAyk8cHHFAH2vRX5GftNftifF39p39p7 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e200] [cursor=pointer]:
+            - strong [ref=e201]: 3KMbeb5VPlLKAyk8cHHFAH2vRX5GftNftifF39p39p7
+            - generic [ref=e202]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3M91bmFrTy3aW4EUablUt5QBaRs7uM4JH1J crypto_wallet | 1 case(s) | 2 link(s)" [ref=e203] [cursor=pointer]:
+            - strong [ref=e204]: 3M91bmFrTy3aW4EUablUt5QBaRs7uM4JH1J
+            - generic [ref=e205]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3N8PPhiJbe2vP7e1NMr5FochW9zX0WGqTwc crypto_wallet | 1 case(s) | 2 link(s)" [ref=e206] [cursor=pointer]:
+            - strong [ref=e207]: 3N8PPhiJbe2vP7e1NMr5FochW9zX0WGqTwc
+            - generic [ref=e208]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3RXBaX4s8ZfC3VAsN5qWh3MZx5FxuVf crypto_wallet | 1 case(s) | 2 link(s)" [ref=e209] [cursor=pointer]:
+            - strong [ref=e210]: 3RXBaX4s8ZfC3VAsN5qWh3MZx5FxuVf
+            - generic [ref=e211]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3U5J0alP4kcWzbXPHFSN83Paoyp346fWp crypto_wallet | 1 case(s) | 2 link(s)" [ref=e212] [cursor=pointer]:
+            - strong [ref=e213]: 3U5J0alP4kcWzbXPHFSN83Paoyp346fWp
+            - generic [ref=e214]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3VB4w8ZfGj4x6wjaPdfvLN9RjFyEZd5uDJcb0jiySoCpgbT90YB84 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e215] [cursor=pointer]:
+            - strong [ref=e216]: 3VB4w8ZfGj4x6wjaPdfvLN9RjFyEZd5uDJcb0jiySoCpgbT90YB84
+            - generic [ref=e217]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3Vm01WfGAMV2Hgnw9J8YJrjwppmkokl5Gd94y crypto_wallet | 1 case(s) | 2 link(s)" [ref=e218] [cursor=pointer]:
+            - strong [ref=e219]: 3Vm01WfGAMV2Hgnw9J8YJrjwppmkokl5Gd94y
+            - generic [ref=e220]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3YccHvX7EfDEltGPs7gjmoCFLY6EVPC37l crypto_wallet | 1 case(s) | 2 link(s)" [ref=e221] [cursor=pointer]:
+            - strong [ref=e222]: 3YccHvX7EfDEltGPs7gjmoCFLY6EVPC37l
+            - generic [ref=e223]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3ZBWP4s1qSLxFJDbyh02gDYwxX5wS crypto_wallet | 1 case(s) | 2 link(s)" [ref=e224] [cursor=pointer]:
+            - strong [ref=e225]: 3ZBWP4s1qSLxFJDbyh02gDYwxX5wS
+            - generic [ref=e226]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3ZNZHSQsM0vLcHinMwjz3pu3vnrTAibhumRT8 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e227] [cursor=pointer]:
+            - strong [ref=e228]: 3ZNZHSQsM0vLcHinMwjz3pu3vnrTAibhumRT8
+            - generic [ref=e229]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3etSthVDYwajTcM4FAh0DFZEAX...ZD1NJGpMsYz3ouCY7pyTkU crypto_wallet | 1 case(s) | 2 link(s)" [ref=e230] [cursor=pointer]:
+            - strong [ref=e231]: 3etSthVDYwajTcM4FAh0DFZEAX...ZD1NJGpMsYz3ouCY7pyTkU
+            - generic [ref=e232]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3fEnw78ff7ZNxpP9mvpDatBCQwlN0JzHcRjE4zHFn52C8Yxu5 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e233] [cursor=pointer]:
+            - strong [ref=e234]: 3fEnw78ff7ZNxpP9mvpDatBCQwlN0JzHcRjE4zHFn52C8Yxu5
+            - generic [ref=e235]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3gP4UeLoYrj4g6ouj6hCp8i5Z8Pg crypto_wallet | 1 case(s) | 2 link(s)" [ref=e236] [cursor=pointer]:
+            - strong [ref=e237]: 3gP4UeLoYrj4g6ouj6hCp8i5Z8Pg
+            - generic [ref=e238]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3ia8F65msnNfUP7cHxevvA37TnwttvFi crypto_wallet | 1 case(s) | 2 link(s)" [ref=e239] [cursor=pointer]:
+            - strong [ref=e240]: 3ia8F65msnNfUP7cHxevvA37TnwttvFi
+            - generic [ref=e241]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3jbxS32TwhpH7z95x9pcchRnryK5b4u crypto_wallet | 1 case(s) | 2 link(s)" [ref=e242] [cursor=pointer]:
+            - strong [ref=e243]: 3jbxS32TwhpH7z95x9pcchRnryK5b4u
+            - generic [ref=e244]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3o2f3x5fvdz5rEcK4CprRvTfk9Pud crypto_wallet | 1 case(s) | 2 link(s)" [ref=e245] [cursor=pointer]:
+            - strong [ref=e246]: 3o2f3x5fvdz5rEcK4CprRvTfk9Pud
+            - generic [ref=e247]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3qK7REeRnjmheMk9KVvUcGhcbaAFXocCo9p5yeM0 crypto_wallet | 1 case(s) | 2 link(s)" [ref=e248] [cursor=pointer]:
+            - strong [ref=e249]: 3qK7REeRnjmheMk9KVvUcGhcbaAFXocCo9p5yeM0
+            - generic [ref=e250]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3r89Zr6W62eZK8gVdi72JwPQV6P crypto_wallet | 1 case(s) | 2 link(s)" [ref=e251] [cursor=pointer]:
+            - strong [ref=e252]: 3r89Zr6W62eZK8gVdi72JwPQV6P
+            - generic [ref=e253]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3uoLyMSW9xFcRnkNC4YfpUlfnR crypto_wallet | 1 case(s) | 2 link(s)" [ref=e254] [cursor=pointer]:
+            - strong [ref=e255]: 3uoLyMSW9xFcRnkNC4YfpUlfnR
+            - generic [ref=e256]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3xDlKo17yS0S7M56lN1KXs6SSXRnz54gUftRf crypto_wallet | 1 case(s) | 2 link(s)" [ref=e257] [cursor=pointer]:
+            - strong [ref=e258]: 3xDlKo17yS0S7M56lN1KXs6SSXRnz54gUftRf
+            - generic [ref=e259]: crypto_wallet | 1 case(s) | 2 link(s)
+          - button "3zBRz3zTghZS3SjjbkDnvUisfLyR8vSoKE crypto_wallet | 1 case(s) | 2 link(s)" [ref=e260] [cursor=pointer]:
+            - strong [ref=e261]: 3zBRz3zTghZS3SjjbkDnvUisfLyR8vSoKE
+            - generic [ref=e262]: crypto_wallet | 1 case(s) | 2 link(s)
+    - generic [ref=e264]:
+      - heading "Ready for a target" [level=2] [ref=e265]
+      - paragraph [ref=e266]: Run an investigation to populate structured evidence, indicators, and raw technical details.

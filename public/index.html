@@ -25,21 +25,6 @@
       </section>
 
       <section class="workspace">
-        <aside class="history-panel">
-          <div class="panel-header">
-            <h2>Cases</h2>
-            <div class="mini-actions">
-              <button id="global-graph-button" class="ghost-button" type="button">Global Graph</button>
-              <button id="clear-history" class="ghost-button" type="button">Clear</button>
-            </div>
-          </div>
-          <div id="history-list" class="history-list"></div>
-          <div class="pivot-panel">
-            <h3>IOC Reuse</h3>
-            <div id="pivot-list" class="pivot-list"></div>
-          </div>
-        </aside>
-
         <section class="results-panel">
           <div id="empty-state" class="empty-state">
             <h2>Ready for a target</h2>
@@ -54,7 +39,7 @@
                 <p id="result-meta"></p>
               </div>
               <div class="button-row">
-                <button id="export-case" class="secondary-button" type="button">Export Case</button>
+                <button id="export-case" class="secondary-button" type="button">Export Scan JSON</button>
                 <button id="copy-json" class="secondary-button" type="button">Copy JSON</button>
               </div>
             </div>
@@ -63,7 +48,7 @@
 
             <div class="detail-grid">
               <section class="detail-section case-section">
-                <h3>Case Metadata</h3>
+                <h3>Investigation Notes</h3>
                 <form id="case-form" class="case-form">
                   <label>Title<input name="title" autocomplete="off"></label>
                   <label>Status<select name="status"><option value="open">Open</option><option value="monitoring">Monitoring</option><option value="referred">Referred</option><option value="closed">Closed</option></select></label>
@@ -74,7 +59,7 @@
                   <label>Loss Amount<input name="lossAmount" autocomplete="off"></label>
                   <label>Jurisdiction<input name="jurisdiction" autocomplete="off"></label>
                   <label class="wide-field">Notes<textarea name="notes" rows="4"></textarea></label>
-                  <button class="secondary-button" type="submit">Save Metadata</button>
+                  <button class="secondary-button" type="submit">Apply to Scan</button>
                 </form>
               </section>
 
@@ -103,6 +88,15 @@
                 <div id="source-details"></div>
               </section>
             </div>
+
+            <section class="detail-section graph-section">
+              <div class="section-header">
+                <h3>Relationship Graph</h3>
+                <p id="graph-summary"></p>
+              </div>
+              <div id="case-graph" class="case-graph"></div>
+              <div id="graph-node-details" class="graph-node-details"></div>
+            </section>
 
             <section class="detail-section evidence-section">
               <h3>Evidence Timeline</h3>

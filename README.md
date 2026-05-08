@@ -15,10 +15,8 @@ ScamIntel is a local scam and fraud website investigation platform. It collects 
 
 ## Requirements
 
-- Node.js 24 or newer
+- Node.js 18 or newer
 - npm
-
-This project uses Node's built-in `node:sqlite` module, which is why Node 24+ is required.
 
 ## Setup
 
@@ -49,13 +47,7 @@ The test suite covers target normalization, public suffix parsing, SSRF blocking
 
 ## Data Storage
 
-ScamIntel stores local case data in:
-
-```text
-data/sniffer.sqlite
-```
-
-SQLite database files are ignored by Git by default. Treat the `data/` directory as potentially sensitive because it may contain investigation targets, extracted indicators, case notes, and evidence hashes.
+ScamIntel is currently stateless. Investigation results are returned to the browser but are not saved to a local database.
 
 ## Security Notes
 
@@ -70,10 +62,9 @@ ScamIntel records useful technical artifacts and hashes, but it is not yet a ful
 ## Project Structure
 
 ```text
-server.js          Node HTTP server, scanner, SQLite persistence, API routes
+server.js          Node HTTP server, scanner, and API routes
 public/           Browser UI
 test/             Node test suite
-data/             Local SQLite database, ignored by Git
 ```
 
 ## License
