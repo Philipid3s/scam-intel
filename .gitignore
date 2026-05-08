@@ -16,3 +16,6 @@ coverage/
 Thumbs.db
 .vscode/
 .idea/
+.playwright-mcp/
+.docker-tmp/
+wallet-layout.png

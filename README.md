@@ -37,6 +37,30 @@ To use another port:
 $env:PORT=3001; npm start
 ```
 
+## Docker
+
+Build and run locally:
+
+```bash
+docker build -t philipid3s/scam-intel .
+docker run --rm -p 3000:3000 philipid3s/scam-intel
+```
+
+The published image is:
+
+```text
+philipid3s/scam-intel
+```
+
+GitHub Actions builds and pushes the Docker image on every push. Configure these repository secrets before relying on the workflow:
+
+```text
+DOCKERHUB_USERNAME
+DOCKERHUB_TOKEN
+```
+
+The workflow publishes `sha-*` and branch tags for every branch push. It publishes `latest` only from the default branch.
+
 ## Testing
 
 ```bash
