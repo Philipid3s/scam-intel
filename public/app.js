@@ -13,12 +13,12 @@ const tlsDetails = document.querySelector("#tls-details");
 const sourceDetails = document.querySelector("#source-details");
 const rawJson = document.querySelector("#raw-json");
 const copyJson = document.querySelector("#copy-json");
+const copyIocs = document.querySelector("#copy-iocs");
 const exportCase = document.querySelector("#export-case");
 const caseForm = document.querySelector("#case-form");
 const evidenceDetails = document.querySelector("#evidence-details");
-const graphSummary = document.querySelector("#graph-summary");
-const caseGraph = document.querySelector("#case-graph");
-const graphNodeDetails = document.querySelector("#graph-node-details");
+const indicatorSummary = document.querySelector("#indicator-summary");
+const indicatorSummaryList = document.querySelector("#indicator-summary-list");
 
 let currentResult = null;
 
@@ -42,6 +42,41 @@ function formatValue(value) {
     return JSON.stringify(value);
   }
   return String(value);
+}
+
+function valuesOnly(values = []) {
+  return values
+    .map((item) => typeof item === "object" ? item.value : item)
+    .filter(Boolean);
+}
+
+function uniqueValues(values = []) {
+  return [...new Set(valuesOnly(values))].sort((a, b) => a.localeCompare(b));
+}
+
+function formatIocText(result) {
+  const source = result?.source || {};
+  const groups = [
+    ["Target", [result?.target?.normalized]],
+    ["Wallets", source.cryptoWalletDetails || source.cryptoWallets],
+    ["Emails", source.emails],
+    ["Phones", source.phones],
+    ["IP Addresses", [...(source.ips || []), result?.network?.primaryIp]],
+    ["URLs", source.links],
+    ["Form Actions", source.formActions],
+    ["Social Handles", source.socialHandles],
+  ];
+
+  return groups
+    .map(([label, values]) => {
+      const entries = uniqueValues(values);
+      if (!entries.length) {
+        return "";
+      }
+      return `${label}:\n${entries.map((value) => `- ${value}`).join("\n")}`;
+    })
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 function renderDefinitionList(node, entries) {
@@ -238,129 +273,32 @@ function renderEvidence(result) {
   `;
 }
 
-function nodeColor(node) {
-  if (node.riskLevel === "high") {
-    return "#b42318";
-  }
-  if (node.riskLevel === "medium") {
-    return "#a65f00";
-  }
-  const colors = {
-    case: "#17212b",
-    url: "#255e9c",
-    domain: "#0d6b71",
-    ip: "#594a9a",
-    email: "#26734d",
-    phone: "#7a4b18",
-    crypto_wallet: "#8a3ffc",
-    social_handle: "#006d77",
-    form_action: "#9a3412",
-    tls_certificate: "#536471",
-    nameserver: "#536471",
-    mail_server: "#536471",
-  };
-  return colors[node.type] || "#536471";
-}
-
-function graphLayout(nodes, width, height) {
-  const center = { x: width / 2, y: height / 2 };
-  if (!nodes.length) {
-    return new Map();
-  }
-  const byType = nodes.reduce((groups, node) => {
-    groups[node.type] = groups[node.type] || [];
-    groups[node.type].push(node);
-    return groups;
-  }, {});
-  const ordered = Object.entries(byType).flatMap(([, group]) => group);
-  const positions = new Map();
-  const caseNode = nodes.find((node) => node.type === "case") || ordered[0];
-  positions.set(caseNode.id, center);
-  const others = ordered.filter((node) => node.id !== caseNode.id);
-  const radius = Math.min(width, height) * 0.35;
-  others.forEach((node, index) => {
-    const angle = (Math.PI * 2 * index) / Math.max(others.length, 1) - Math.PI / 2;
-    const ring = radius + (index % 3) * 28;
-    positions.set(node.id, {
-      x: center.x + Math.cos(angle) * ring,
-      y: center.y + Math.sin(angle) * ring,
-    });
-  });
-  return positions;
-}
-
-function renderGraphDetails(node) {
-  if (!node) {
-    graphNodeDetails.innerHTML = "<p>Select a graph node to inspect its value and first/last seen timestamps.</p>";
-    return;
-  }
-  graphNodeDetails.innerHTML = `
-    <dl class="compact-list">
-      <dt>Type</dt><dd>${escapeHtml(node.type)}</dd>
-      <dt>Risk</dt><dd>${escapeHtml(node.riskLevel)}</dd>
-      <dt>Value</dt><dd><code>${escapeHtml(node.value)}</code></dd>
-      <dt>First seen</dt><dd>${escapeHtml(node.firstSeen)}</dd>
-      <dt>Last seen</dt><dd>${escapeHtml(node.lastSeen)}</dd>
-    </dl>
-  `;
-}
-
-function renderGraph(graph, scope = "Case") {
-  const nodes = graph.nodes || [];
-  const edges = graph.edges || [];
-  graphSummary.textContent = `${scope}: ${nodes.length} node(s), ${edges.length} relationship(s)`;
-  if (!nodes.length) {
-    caseGraph.innerHTML = "<p>No graph relationships have been recorded for this case yet.</p>";
-    renderGraphDetails(null);
-    return;
-  }
-
-  const width = 920;
-  const height = 430;
-  const positions = graphLayout(nodes, width, height);
-  const nodeById = new Map(nodes.map((node) => [node.id, node]));
-  const edgeMarkup = edges.map((edge) => {
-    const source = positions.get(edge.source);
-    const target = positions.get(edge.target);
-    if (!source || !target) {
-      return "";
-    }
-    const midX = (source.x + target.x) / 2;
-    const midY = (source.y + target.y) / 2;
+function renderIndicatorSummary(result) {
+  const source = result.source || {};
+  const groups = [
+    ["Wallets", source.cryptoWalletDetails || source.cryptoWallets || []],
+    ["Emails", source.emails || []],
+    ["Phones", source.phones || []],
+    ["Form actions", source.formActions || []],
+    ["IP addresses", source.ips || []],
+    ["Links", source.links || []],
+    ["Social handles", source.socialHandles || []],
+  ];
+  const total = groups.reduce((count, [, values]) => count + values.length, 0);
+  indicatorSummary.textContent = `${total} extracted indicator(s)`;
+  indicatorSummaryList.innerHTML = groups.map(([label, values]) => {
+    const preview = values
+      .slice(0, 4)
+      .map((item) => typeof item === "object" ? item.value : item)
+      .map((value) => truncateMiddle(value, 20, 12));
     return `
-      <g>
-        <line x1="${source.x}" y1="${source.y}" x2="${target.x}" y2="${target.y}" class="graph-edge"></line>
-        <text x="${midX}" y="${midY}" class="graph-edge-label">${escapeHtml(edge.relationship)}</text>
-      </g>
+      <article class="indicator-summary-card">
+        <span>${escapeHtml(label)}</span>
+        <strong>${values.length}</strong>
+        <p>${preview.length ? escapeHtml(preview.join(" | ")) : "None found"}</p>
+      </article>
     `;
   }).join("");
-
-  const nodeMarkup = nodes.map((node) => {
-    const position = positions.get(node.id);
-    const radius = node.type === "case" ? 26 : 20;
-    return `
-      <g class="graph-node" data-node-id="${node.id}" transform="translate(${position.x} ${position.y})">
-        <circle r="${radius}" fill="${nodeColor(node)}"></circle>
-        <text y="${radius + 15}" text-anchor="middle">${escapeHtml(node.label)}</text>
-        <title>${escapeHtml(`${node.type}: ${node.value}`)}</title>
-      </g>
-    `;
-  }).join("");
-
-  caseGraph.innerHTML = `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Case relationship graph">
-      ${edgeMarkup}
-      ${nodeMarkup}
-    </svg>
-  `;
-  renderGraphDetails(nodes.find((node) => node.type === "case") || nodes[0]);
-
-  caseGraph.querySelectorAll(".graph-node").forEach((nodeElement) => {
-    nodeElement.addEventListener("click", () => {
-      const node = nodeById.get(Number(nodeElement.dataset.nodeId));
-      renderGraphDetails(node);
-    });
-  });
 }
 
 function renderResult(result) {
@@ -393,8 +331,8 @@ function renderResult(result) {
   renderTls(result);
   renderSource(result);
   renderEvidence(result);
+  renderIndicatorSummary(result);
   rawJson.textContent = JSON.stringify(result, null, 2);
-  renderGraph({ nodes: [], edges: [] });
 }
 
 async function investigate(target) {
@@ -441,6 +379,22 @@ copyJson.addEventListener("click", async () => {
   }, 1200);
 });
 
+copyIocs.addEventListener("click", async () => {
+  if (!currentResult) {
+    return;
+  }
+  const text = formatIocText(currentResult);
+  if (!text) {
+    statusLine.textContent = "No IOCs available to copy.";
+    return;
+  }
+  await navigator.clipboard.writeText(text);
+  copyIocs.textContent = "Copied";
+  setTimeout(() => {
+    copyIocs.textContent = "Copy IOCs";
+  }, 1200);
+});
+
 exportCase.addEventListener("click", () => {
   if (!currentResult) {
     return;
@@ -466,5 +420,5 @@ caseForm.addEventListener("submit", async (event) => {
   const updates = Object.fromEntries(new FormData(caseForm).entries());
   currentResult.case = { ...(currentResult.case || {}), ...updates };
   rawJson.textContent = JSON.stringify(currentResult, null, 2);
-  statusLine.textContent = "Applied to the current scan.";
+  statusLine.textContent = "Export notes applied to current JSON.";
 });

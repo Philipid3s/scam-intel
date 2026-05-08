@@ -40,6 +40,7 @@
               </div>
               <div class="button-row">
                 <button id="export-case" class="secondary-button" type="button">Export Scan JSON</button>
+                <button id="copy-iocs" class="secondary-button" type="button">Copy IOCs</button>
                 <button id="copy-json" class="secondary-button" type="button">Copy JSON</button>
               </div>
             </div>
@@ -48,7 +49,10 @@
 
             <div class="detail-grid">
               <section class="detail-section case-section">
-                <h3>Investigation Notes</h3>
+                <div class="section-title-block">
+                  <h3>Export Notes</h3>
+                  <p>Included only in exported scan JSON.</p>
+                </div>
                 <form id="case-form" class="case-form">
                   <label>Title<input name="title" autocomplete="off"></label>
                   <label>Status<select name="status"><option value="open">Open</option><option value="monitoring">Monitoring</option><option value="referred">Referred</option><option value="closed">Closed</option></select></label>
@@ -59,7 +63,7 @@
                   <label>Loss Amount<input name="lossAmount" autocomplete="off"></label>
                   <label>Jurisdiction<input name="jurisdiction" autocomplete="off"></label>
                   <label class="wide-field">Notes<textarea name="notes" rows="4"></textarea></label>
-                  <button class="secondary-button" type="submit">Apply to Scan</button>
+                  <button class="secondary-button" type="submit">Apply to Export</button>
                 </form>
               </section>
 
@@ -89,13 +93,12 @@
               </section>
             </div>
 
-            <section class="detail-section graph-section">
+            <section class="detail-section indicator-summary-section">
               <div class="section-header">
-                <h3>Relationship Graph</h3>
-                <p id="graph-summary"></p>
+                <h3>Current Indicators</h3>
+                <p id="indicator-summary"></p>
               </div>
-              <div id="case-graph" class="case-graph"></div>
-              <div id="graph-node-details" class="graph-node-details"></div>
+              <div id="indicator-summary-list" class="indicator-summary-list"></div>
             </section>
 
             <section class="detail-section evidence-section">
@@ -104,8 +107,10 @@
             </section>
 
             <section class="detail-section raw-section">
-              <h3>Raw Evidence</h3>
-              <pre id="raw-json"></pre>
+              <details>
+                <summary>Raw Evidence JSON</summary>
+                <pre id="raw-json"></pre>
+              </details>
             </section>
           </div>
         </section>
