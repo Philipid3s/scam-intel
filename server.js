@@ -777,6 +777,161 @@ function extractCryptoWallets(source) {
   return extractCryptoWalletDetails(source).map((wallet) => wallet.value);
 }
 
+function decodeHtmlEntities(value) {
+  return String(value || "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([a-f0-9]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function stripTags(value) {
+  return decodeHtmlEntities(String(value || "").replace(/<[^>]*>/g, " "));
+}
+
+function parseHtmlAttributes(markup) {
+  const attrs = {};
+  const attrPattern = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g;
+  let match;
+  while ((match = attrPattern.exec(markup))) {
+    attrs[match[1].toLowerCase()] = decodeHtmlEntities(match[2] ?? match[3] ?? match[4] ?? "");
+  }
+  return attrs;
+}
+
+function metaValue(source, names) {
+  const wanted = new Set(names.map((name) => name.toLowerCase()));
+  const metaPattern = /<meta\b([^>]*)>/gi;
+  let match;
+  while ((match = metaPattern.exec(source))) {
+    const attrs = parseHtmlAttributes(match[1]);
+    const key = (attrs.name || attrs.property || attrs["http-equiv"] || "").toLowerCase();
+    if (wanted.has(key) && attrs.content) {
+      return attrs.content;
+    }
+  }
+  return null;
+}
+
+function linkHref(source, relNames, baseUrl) {
+  const wanted = new Set(relNames.map((name) => name.toLowerCase()));
+  const linkPattern = /<link\b([^>]*)>/gi;
+  let match;
+  while ((match = linkPattern.exec(source))) {
+    const attrs = parseHtmlAttributes(match[1]);
+    const rel = String(attrs.rel || "").toLowerCase().split(/\s+/);
+    if (rel.some((name) => wanted.has(name)) && attrs.href) {
+      try {
+        return new URL(attrs.href, baseUrl).toString();
+      } catch {
+        return attrs.href;
+      }
+    }
+  }
+  return null;
+}
+
+function extractHtmlMetadata(source, baseUrl) {
+  const titleMatch = source.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
+  const htmlMatch = source.match(/<html\b([^>]*)>/i);
+  const htmlAttrs = htmlMatch ? parseHtmlAttributes(htmlMatch[1]) : {};
+  const generator = metaValue(source, ["generator"]);
+  return {
+    title: titleMatch ? stripTags(titleMatch[1]) : null,
+    description: metaValue(source, ["description"]),
+    canonicalUrl: linkHref(source, ["canonical"], baseUrl),
+    faviconUrl: linkHref(source, ["icon", "shortcut icon", "apple-touch-icon"], baseUrl),
+    language: htmlAttrs.lang || metaValue(source, ["language", "content-language"]),
+    generator,
+    openGraph: {
+      title: metaValue(source, ["og:title"]),
+      description: metaValue(source, ["og:description"]),
+      siteName: metaValue(source, ["og:site_name"]),
+      image: metaValue(source, ["og:image"]),
+    },
+    twitter: {
+      title: metaValue(source, ["twitter:title"]),
+      description: metaValue(source, ["twitter:description"]),
+      card: metaValue(source, ["twitter:card"]),
+    },
+  };
+}
+
+function classifyFormInput(attrs) {
+  const haystack = [attrs.name, attrs.id, attrs.type, attrs.placeholder, attrs.autocomplete, attrs.value]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  if (/password|passwd|passcode|pin\b|otp|2fa|mfa|verification|code/.test(haystack)) {
+    return "credential";
+  }
+  if (/seed|recovery phrase|mnemonic|private.?key|wallet/.test(haystack)) {
+    return "wallet_secret";
+  }
+  if (/card|cc-|credit|cvv|cvc|expiry|iban|routing|account/.test(haystack)) {
+    return "payment";
+  }
+  if (/email|user|login|phone|mobile|name/.test(haystack)) {
+    return "identity";
+  }
+  return "other";
+}
+
+function extractForms(source, baseUrl) {
+  const forms = [];
+  const formPattern = /<form\b([^>]*)>([\s\S]*?)<\/form>/gi;
+  let formMatch;
+  while ((formMatch = formPattern.exec(source)) && forms.length < 25) {
+    const attrs = parseHtmlAttributes(formMatch[1]);
+    const body = formMatch[2] || "";
+    const inputs = [];
+    const inputPattern = /<(input|textarea|select|button)\b([^>]*)>/gi;
+    let inputMatch;
+    while ((inputMatch = inputPattern.exec(body)) && inputs.length < 80) {
+      const inputAttrs = parseHtmlAttributes(inputMatch[2]);
+      const type = inputMatch[1].toLowerCase() === "input" ? (inputAttrs.type || "text").toLowerCase() : inputMatch[1].toLowerCase();
+      inputs.push({
+        tag: inputMatch[1].toLowerCase(),
+        type,
+        name: inputAttrs.name || null,
+        id: inputAttrs.id || null,
+        placeholder: inputAttrs.placeholder || null,
+        autocomplete: inputAttrs.autocomplete || null,
+        classification: classifyFormInput({ ...inputAttrs, type }),
+      });
+    }
+    const classifications = new Set(inputs.map((input) => input.classification));
+    let action = attrs.action || "";
+    if (action) {
+      try {
+        action = new URL(action, baseUrl).toString();
+      } catch {
+        // Keep the original action for analyst review.
+      }
+    }
+    forms.push({
+      action: action || baseUrl,
+      method: (attrs.method || "get").toUpperCase(),
+      id: attrs.id || null,
+      name: attrs.name || null,
+      inputCount: inputs.length,
+      hasPassword: inputs.some((input) => input.type === "password" || input.classification === "credential"),
+      hasOtp: inputs.some((input) => /otp|2fa|mfa|verification|code/i.test([input.name, input.id, input.placeholder].filter(Boolean).join(" "))),
+      hasWalletSecret: classifications.has("wallet_secret"),
+      hasPaymentField: classifications.has("payment"),
+      hiddenFieldCount: inputs.filter((input) => input.type === "hidden").length,
+      inputs,
+    });
+  }
+  return forms;
+}
+
 function extractSourceIndicators(source, baseUrl) {
   const emails = uniqueSorted(source.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || []);
   const ips = uniqueSorted(
@@ -825,6 +980,8 @@ function extractSourceIndicators(source, baseUrl) {
 
   const cryptoWalletDetails = extractCryptoWalletDetails(source);
   return {
+    metadata: extractHtmlMetadata(source, baseUrl),
+    forms: extractForms(source, baseUrl),
     emails,
     ips,
     links: uniqueSorted(links).slice(0, 250),
@@ -857,6 +1014,8 @@ async function getSourceProfile(target, httpProfile) {
       cryptoWalletDetails: [],
       socialHandles: [],
       formActions: [],
+      metadata: null,
+      forms: [],
     };
   }
 
@@ -980,6 +1139,10 @@ function buildSignals(target, dnsProfile, httpProfile, tlsProfile, sourceProfile
       + sourceProfile.socialHandles.length;
     if (count > 0) {
       add("info", "Page indicators found", `Source scan found ${sourceProfile.emails.length} email(s), ${sourceProfile.links.length} link(s), ${sourceProfile.ips.length} IP address(es), ${sourceProfile.phones.length} phone number(s), ${sourceProfile.cryptoWallets.length} wallet(s), and ${sourceProfile.socialHandles.length} social handle(s).`);
+    }
+    const sensitiveForms = (sourceProfile.forms || []).filter((form) => form.hasPassword || form.hasOtp || form.hasWalletSecret || form.hasPaymentField);
+    if (sensitiveForms.length) {
+      add("medium", "Sensitive form fields", `Source scan found ${sensitiveForms.length} form(s) requesting credentials, OTP codes, wallet secrets, or payment details.`);
     }
   }
   if (sourceProfile && !sourceProfile.ok) {

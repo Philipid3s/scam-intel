@@ -38,20 +38,57 @@
                 <h2 id="result-title"></h2>
                 <p id="result-meta"></p>
               </div>
-              <div class="button-row">
-                <button id="export-case" class="secondary-button" type="button">Export Scan JSON</button>
-                <button id="copy-iocs" class="secondary-button" type="button">Copy IOCs</button>
-                <button id="copy-json" class="secondary-button" type="button">Copy JSON</button>
-              </div>
             </div>
 
-            <div id="signals" class="signal-grid"></div>
+            <div class="tab-list" role="tablist" aria-label="Investigation workspace">
+              <button id="investigation-tab" class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="investigation-panel">Current Investigation</button>
+              <button id="report-tab" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="report-panel">Report Export</button>
+            </div>
 
-            <div class="detail-grid">
+            <section id="investigation-panel" class="tab-panel active" role="tabpanel" aria-labelledby="investigation-tab">
+              <div id="signals" class="signal-grid"></div>
+
+              <div class="detail-grid">
+                <section class="detail-section">
+                  <h3>Identity</h3>
+                  <dl id="identity-list"></dl>
+                </section>
+
+                <section class="detail-section">
+                  <h3>HTTP</h3>
+                  <div id="http-details"></div>
+                </section>
+
+                <section class="detail-section">
+                  <h3>DNS</h3>
+                  <div id="dns-details"></div>
+                </section>
+
+                <section class="detail-section">
+                  <h3>TLS</h3>
+                  <div id="tls-details"></div>
+                </section>
+
+                <section class="detail-section source-section">
+                  <h3>Page Extracts</h3>
+                  <div id="source-details"></div>
+                </section>
+              </div>
+
+              <section class="detail-section indicator-summary-section">
+                <div class="section-header">
+                  <h3>Current Indicators</h3>
+                  <p id="indicator-summary"></p>
+                </div>
+                <div id="indicator-summary-list" class="indicator-summary-list"></div>
+              </section>
+            </section>
+
+            <section id="report-panel" class="tab-panel" role="tabpanel" aria-labelledby="report-tab" hidden>
               <section class="detail-section case-section">
                 <div class="section-title-block">
-                  <h3>Export Notes</h3>
-                  <p>Included only in exported scan JSON.</p>
+                  <h3>Report Redaction & Export</h3>
+                  <p>These notes are included only in exported scan JSON.</p>
                 </div>
                 <form id="case-form" class="case-form">
                   <label>Title<input name="title" autocomplete="off"></label>
@@ -63,59 +100,42 @@
                   <label>Loss Amount<input name="lossAmount" autocomplete="off"></label>
                   <label>Jurisdiction<input name="jurisdiction" autocomplete="off"></label>
                   <label class="wide-field">Notes<textarea name="notes" rows="4"></textarea></label>
+                  <fieldset class="wide-field report-options">
+                    <legend>Export Sections</legend>
+                    <label><input type="checkbox" name="includeIndicators" checked> Indicators</label>
+                    <label><input type="checkbox" name="includeNetworkEvidence" checked> Network Evidence</label>
+                    <label><input type="checkbox" name="includeRawProfiles" checked> Raw Technical Profiles</label>
+                    <label><input type="checkbox" name="redactVictimDetails"> Redact Victim Details</label>
+                  </fieldset>
                   <button class="secondary-button" type="submit">Apply to Export</button>
                 </form>
               </section>
 
-              <section class="detail-section">
-                <h3>Identity</h3>
-                <dl id="identity-list"></dl>
+              <section class="detail-section evidence-section">
+                <div class="section-header">
+                  <h3>Evidence Package</h3>
+                  <div class="button-row">
+                    <button id="export-case" class="secondary-button" type="button">Export Scan JSON</button>
+                    <button id="copy-iocs" class="secondary-button" type="button">Copy IOCs</button>
+                    <button id="copy-json" class="secondary-button" type="button">Copy JSON</button>
+                  </div>
+                </div>
+                <div id="evidence-details"></div>
+                <div id="report-preview" class="report-preview"></div>
               </section>
 
-              <section class="detail-section">
-                <h3>HTTP</h3>
-                <div id="http-details"></div>
+              <section class="detail-section raw-section">
+                <details>
+                  <summary>Export Package JSON</summary>
+                  <pre id="raw-json"></pre>
+                </details>
               </section>
-
-              <section class="detail-section">
-                <h3>DNS</h3>
-                <div id="dns-details"></div>
-              </section>
-
-              <section class="detail-section">
-                <h3>TLS</h3>
-                <div id="tls-details"></div>
-              </section>
-
-              <section class="detail-section source-section">
-                <h3>Page Extracts</h3>
-                <div id="source-details"></div>
-              </section>
-            </div>
-
-            <section class="detail-section indicator-summary-section">
-              <div class="section-header">
-                <h3>Current Indicators</h3>
-                <p id="indicator-summary"></p>
-              </div>
-              <div id="indicator-summary-list" class="indicator-summary-list"></div>
-            </section>
-
-            <section class="detail-section evidence-section">
-              <h3>Evidence Timeline</h3>
-              <div id="evidence-details"></div>
-            </section>
-
-            <section class="detail-section raw-section">
-              <details>
-                <summary>Raw Evidence JSON</summary>
-                <pre id="raw-json"></pre>
-              </details>
             </section>
           </div>
         </section>
       </section>
     </main>
+    <script src="/report-export.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

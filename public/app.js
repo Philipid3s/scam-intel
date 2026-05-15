@@ -17,10 +17,28 @@ const copyIocs = document.querySelector("#copy-iocs");
 const exportCase = document.querySelector("#export-case");
 const caseForm = document.querySelector("#case-form");
 const evidenceDetails = document.querySelector("#evidence-details");
+const reportPreview = document.querySelector("#report-preview");
 const indicatorSummary = document.querySelector("#indicator-summary");
 const indicatorSummaryList = document.querySelector("#indicator-summary-list");
+const tabButtons = [...document.querySelectorAll(".tab-button")];
+const tabPanels = [...document.querySelectorAll(".tab-panel")];
+const reportExport = window.ScamIntelReportExport;
 
 let currentResult = null;
+
+function activateTab(button) {
+  for (const tabButton of tabButtons) {
+    const isActive = tabButton === button;
+    tabButton.classList.toggle("active", isActive);
+    tabButton.setAttribute("aria-selected", String(isActive));
+  }
+
+  for (const panel of tabPanels) {
+    const isActive = panel.id === button.getAttribute("aria-controls");
+    panel.classList.toggle("active", isActive);
+    panel.hidden = !isActive;
+  }
+}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -52,6 +70,90 @@ function valuesOnly(values = []) {
 
 function uniqueValues(values = []) {
   return [...new Set(valuesOnly(values))].sort((a, b) => a.localeCompare(b));
+}
+
+function getReportOptions() {
+  return {
+    includeIndicators: caseForm.elements.includeIndicators?.checked ?? true,
+    includeNetworkEvidence: caseForm.elements.includeNetworkEvidence?.checked ?? true,
+    includeRawProfiles: caseForm.elements.includeRawProfiles?.checked ?? true,
+    redactVictimDetails: caseForm.elements.redactVictimDetails?.checked ?? false,
+  };
+}
+
+function getRawReportNotes() {
+  const notes = Object.fromEntries(new FormData(caseForm).entries());
+  delete notes.includeIndicators;
+  delete notes.includeNetworkEvidence;
+  delete notes.includeRawProfiles;
+  delete notes.redactVictimDetails;
+  return notes;
+}
+
+function buildExportPayload(result) {
+  return reportExport.buildExportPayload({
+    result,
+    notes: getRawReportNotes(),
+    options: getReportOptions(),
+  });
+}
+
+function renderReportPreview(result) {
+  const payload = buildExportPayload(result);
+  const notes = payload.report.notes;
+  const evidence = payload.report.evidence;
+  const indicators = evidence.indicators;
+  const network = evidence.network;
+  const hashes = evidence.hashes || {};
+
+  reportPreview.innerHTML = `
+    <div class="section-title-block">
+      <h4>Report Preview</h4>
+      <p>${escapeHtml(notes.title || result?.target?.normalized || "Untitled report")}</p>
+    </div>
+    <div class="preview-grid">
+      <article>
+        <span>Summary</span>
+        <p>${escapeHtml(reportExport.summarizeSignals(evidence.signals))}</p>
+      </article>
+      <article>
+        <span>Target</span>
+        <p>${escapeHtml(result?.target?.normalized || "Not available")}</p>
+      </article>
+      <article>
+        <span>Report Notes</span>
+        <p>${escapeHtml([notes.scamCategory, notes.status, notes.jurisdiction].filter(Boolean).join(" | ") || "No report metadata added.")}</p>
+      </article>
+      <article>
+        <span>Redaction</span>
+        <p>${payload.report.redactions.victimDetails ? "Victim details redacted from report notes and raw profile case metadata." : "No report redaction enabled."}</p>
+      </article>
+      <article>
+        <span>Indicators</span>
+        <p>${indicators ? escapeHtml(`${indicators.wallets.length} wallet(s), ${indicators.emails.length} email(s), ${indicators.phones.length} phone(s), ${indicators.links.length} link(s)`) : "Excluded from export package."}</p>
+      </article>
+      <article>
+        <span>Network Evidence</span>
+        <p>${network ? escapeHtml([network.primaryIp, network.httpFinalUrl, network.tlsFingerprint].filter(Boolean).map((value) => truncateMiddle(value, 24, 14)).join(" | ") || "No network evidence available.") : "Excluded from export package."}</p>
+      </article>
+      <article>
+        <span>Evidence Hashes</span>
+        <p>${escapeHtml([hashes.result?.sha256, hashes.source?.sha256, hashes.httpHeaders?.sha256].filter(Boolean).map((value) => truncateMiddle(value, 16, 12)).join(" | ") || "No hashes available.")}</p>
+      </article>
+      <article>
+        <span>Raw Profiles</span>
+        <p>${payload.result ? "Included in export package." : "Excluded from export package."}</p>
+      </article>
+    </div>
+  `;
+}
+
+function refreshReportPackage() {
+  if (!currentResult) {
+    return;
+  }
+  renderReportPreview(currentResult);
+  rawJson.textContent = JSON.stringify(buildExportPayload(currentResult), null, 2);
 }
 
 function formatIocText(result) {
@@ -207,13 +309,81 @@ function renderIndicatorGroup(title, values, options = {}) {
   `;
 }
 
+function renderMetadata(metadata) {
+  if (!metadata) {
+    return "";
+  }
+  const rows = [
+    ["Title", metadata.title],
+    ["Description", metadata.description],
+    ["Canonical", metadata.canonicalUrl],
+    ["Language", metadata.language],
+    ["Generator", metadata.generator],
+    ["Open Graph", [metadata.openGraph?.title, metadata.openGraph?.siteName].filter(Boolean).join(" | ")],
+    ["Twitter Card", [metadata.twitter?.card, metadata.twitter?.title].filter(Boolean).join(" | ")],
+    ["Favicon", metadata.faviconUrl],
+  ].filter(([, value]) => value);
+
+  if (!rows.length) {
+    return "";
+  }
+
+  return `
+    <section class="source-subsection">
+      <h4>Page Metadata</h4>
+      <dl class="compact-list">
+        ${rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}
+      </dl>
+    </section>
+  `;
+}
+
+function renderForms(forms = []) {
+  if (!forms.length) {
+    return "";
+  }
+
+  return `
+    <section class="source-subsection">
+      <h4>Forms</h4>
+      <ul class="record-list form-intel-list">
+        ${forms.map((form, index) => {
+          const flags = [
+            form.hasPassword ? "password" : null,
+            form.hasOtp ? "OTP/code" : null,
+            form.hasWalletSecret ? "wallet secret" : null,
+            form.hasPaymentField ? "payment" : null,
+            form.hiddenFieldCount ? `${form.hiddenFieldCount} hidden` : null,
+          ].filter(Boolean);
+          const inputs = (form.inputs || []).slice(0, 12).map((input) => {
+            const label = [input.type, input.name || input.id || input.placeholder || input.tag].filter(Boolean).join(" | ");
+            return `<span>${escapeHtml(label)} <em>${escapeHtml(input.classification)}</em></span>`;
+          }).join("");
+          return `
+            <li>
+              <span class="record-title">Form ${index + 1} | ${escapeHtml(form.method || "GET")}</span>
+              <div><code>${escapeHtml(form.action || "No action")}</code></div>
+              <p>${escapeHtml(`${form.inputCount || 0} field(s)${flags.length ? ` | ${flags.join(", ")}` : ""}`)}</p>
+              ${inputs ? `<div class="form-field-list">${inputs}</div>` : ""}
+            </li>
+          `;
+        }).join("")}
+      </ul>
+    </section>
+  `;
+}
+
 function setCaseForm(result) {
   const data = result.case || {};
   for (const field of caseForm.elements) {
     if (!field.name) {
       continue;
     }
-    field.value = data[field.name] || "";
+    if (field.type === "checkbox") {
+      field.checked = data[field.name] ?? field.defaultChecked;
+    } else {
+      field.value = data[field.name] || "";
+    }
   }
 }
 
@@ -242,6 +412,8 @@ function renderSource(result) {
       <dt>URL</dt><dd>${escapeHtml(result.source.url)}</dd>
       <dt>Inspected</dt><dd>${escapeHtml(`${result.source.bytesInspected} bytes${result.source.truncated ? " (truncated)" : ""}`)}</dd>
     </dl>
+    ${renderMetadata(result.source.metadata)}
+    ${renderForms(result.source.forms)}
     ${groups ? `<ul class="record-list source-list">${groups}</ul>` : "<p>No emails, links, or IP addresses were found in the inspected source.</p>"}
   `;
 }
@@ -255,7 +427,7 @@ function renderEvidence(result) {
       <dl class="compact-list">
         <dt>Case</dt><dd>${escapeHtml(result.case?.caseNumber || result.caseId || "Unsaved scan")}</dd>
         <dt>Scan ID</dt><dd>${escapeHtml(result.scanId || scans[0]?.id || "Not persisted")}</dd>
-        <dt>Tool</dt><dd>Sniffer ${escapeHtml(result.evidence?.collection?.toolVersion || "")}</dd>
+        <dt>Tool</dt><dd>ScamIntel ${escapeHtml(result.evidence?.collection?.toolVersion || "")}</dd>
         <dt>Collected UTC</dt><dd>${escapeHtml(result.evidence?.collection?.collectedAtUtc || result.scannedAt)}</dd>
       </dl>
       <dl class="compact-list">
@@ -332,7 +504,7 @@ function renderResult(result) {
   renderSource(result);
   renderEvidence(result);
   renderIndicatorSummary(result);
-  rawJson.textContent = JSON.stringify(result, null, 2);
+  refreshReportPackage();
 }
 
 async function investigate(target) {
@@ -368,11 +540,15 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+for (const tabButton of tabButtons) {
+  tabButton.addEventListener("click", () => activateTab(tabButton));
+}
+
 copyJson.addEventListener("click", async () => {
   if (!currentResult) {
     return;
   }
-  await navigator.clipboard.writeText(JSON.stringify(currentResult, null, 2));
+  await navigator.clipboard.writeText(JSON.stringify(buildExportPayload(currentResult), null, 2));
   copyJson.textContent = "Copied";
   setTimeout(() => {
     copyJson.textContent = "Copy JSON";
@@ -399,11 +575,7 @@ exportCase.addEventListener("click", () => {
   if (!currentResult) {
     return;
   }
-  const blob = new Blob([JSON.stringify({
-    exportedAt: new Date().toISOString(),
-    tool: { name: "ScamIntel" },
-    result: currentResult,
-  }, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(buildExportPayload(currentResult), null, 2)], { type: "application/json" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = `scamintel-scan-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
@@ -417,8 +589,11 @@ caseForm.addEventListener("submit", async (event) => {
     statusLine.textContent = "Run an investigation first.";
     return;
   }
-  const updates = Object.fromEntries(new FormData(caseForm).entries());
+  const updates = { ...getRawReportNotes(), ...getReportOptions() };
   currentResult.case = { ...(currentResult.case || {}), ...updates };
-  rawJson.textContent = JSON.stringify(currentResult, null, 2);
-  statusLine.textContent = "Export notes applied to current JSON.";
+  refreshReportPackage();
+  statusLine.textContent = "Report export package updated.";
 });
+
+caseForm.addEventListener("input", refreshReportPackage);
+caseForm.addEventListener("change", refreshReportPackage);
