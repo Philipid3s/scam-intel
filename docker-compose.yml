@@ -1,0 +1,10 @@
+services:
+  scamintel:
+    image: philipid3s/scam-intel:latest
+    container_name: scamintel
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3020:3000"

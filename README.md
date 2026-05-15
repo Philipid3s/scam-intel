@@ -46,6 +46,18 @@ docker build -t philipid3s/scam-intel .
 docker run --rm -p 3000:3000 philipid3s/scam-intel
 ```
 
+Deploy with Docker Compose on host port `3020`:
+
+```bash
+docker compose up -d
+```
+
+The included `docker-compose.yml` publishes the app at:
+
+```text
+http://localhost:3020
+```
+
 The published image is:
 
 ```text
