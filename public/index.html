@@ -3,32 +3,73 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0a252d">
     <title>ScamIntel Investigation Platform</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.6 7.5 9.5 4.3-.9 7.5-4.9 7.5-9.5V6z"/><circle cx="11.5" cy="11.5" r="2.8"/><path d="m13.6 13.6 2.4 2.4"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+      <symbol id="i-high" viewBox="0 0 24 24"><path d="M8.5 3h7L21 8.5v7L15.5 21h-7L3 15.5v-7z"/><path d="M12 8v5"/><path d="M12 16.5v.01"/></symbol>
+      <symbol id="i-medium" viewBox="0 0 24 24"><path d="M10.3 4.2 2.6 17.5a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v3.5"/><path d="M12 16.5v.01"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.01"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16.5 9.5"/></symbol>
+      <symbol id="i-id" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16c.6-1.3 1.5-2 2.5-2s1.9.7 2.5 2"/><path d="M15 10h3M15 14h3"/></symbol>
+      <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6.5a3 3 0 0 0 0-6h-5a3 3 0 0 1 0-6H16"/></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.4 2.5 3.6 5.5 3.6 9s-1.2 6.5-3.6 9c-2.4-2.5-3.6-5.5-3.6-9S9.6 5.5 12 3z"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+      <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4"/><path d="m16 8 4 4-4 4"/><path d="m13.5 5-3 14"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></symbol>
+      <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.6 7.5 9.5 4.3-.9 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+      <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+      <symbol id="i-braces" viewBox="0 0 24 24"><path d="M8 3H7a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1"/><path d="M16 3h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-1"/></symbol>
+    </svg>
+
     <main class="app-shell">
-      <section class="search-band">
+      <header class="search-band">
         <div class="brand-block">
-          <p class="eyebrow">Suspicious infrastructure triage</p>
-          <h1>ScamIntel</h1>
+          <div class="brand-row">
+            <svg class="brand-mark" aria-hidden="true"><use href="#i-logo"/></svg>
+            <div>
+              <p class="eyebrow">Suspicious infrastructure triage</p>
+              <h1>ScamIntel</h1>
+            </div>
+          </div>
           <p class="lede">Trace scam infrastructure, preserve evidence, and connect URLs, IPs, emails, wallets, and other indicators.</p>
         </div>
         <form id="investigation-form" class="target-form">
           <label for="target-input">Target</label>
           <div class="target-row">
-            <input id="target-input" name="target" autocomplete="off" spellcheck="false" placeholder="https://example.com/login or 8.8.8.8" required>
-            <button type="submit">Investigate</button>
+            <div class="input-wrap">
+              <svg class="icon input-icon" aria-hidden="true"><use href="#i-search"/></svg>
+              <input id="target-input" name="target" autocomplete="off" spellcheck="false" placeholder="https://example.com/login or 8.8.8.8" required>
+            </div>
+            <button type="submit" class="primary-button">
+              <span class="spinner" aria-hidden="true"></span>
+              <span class="label">Investigate</span>
+            </button>
           </div>
           <p id="form-status" class="status-line" role="status"></p>
         </form>
-      </section>
+      </header>
 
       <section class="workspace">
         <section class="results-panel">
           <div id="empty-state" class="empty-state">
+            <svg class="empty-icon" aria-hidden="true"><use href="#i-target"/></svg>
             <h2>Ready for a target</h2>
-            <p>Run an investigation to populate structured evidence, indicators, and raw technical details.</p>
+            <p>Paste a suspicious URL, domain, or IP address. ScamIntel collects DNS, HTTP, TLS, registration, and page evidence, then highlights risk signals and indicators.</p>
+            <div class="example-row" aria-label="Example targets">
+              <span>Try</span>
+              <button type="button" class="chip" data-example="https://example.com/login">example.com/login</button>
+              <button type="button" class="chip" data-example="8.8.8.8">8.8.8.8</button>
+              <button type="button" class="chip" data-example="xn--pple-43d.com">xn--pple-43d.com</button>
+            </div>
           </div>
 
           <div id="results" class="results hidden">
@@ -41,43 +82,48 @@
             </div>
 
             <div class="tab-list" role="tablist" aria-label="Investigation workspace">
-              <button id="investigation-tab" class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="investigation-panel">Current Investigation</button>
-              <button id="report-tab" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="report-panel">Report Export</button>
+              <button id="investigation-tab" class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="investigation-panel">
+                <svg class="icon" aria-hidden="true"><use href="#i-target"/></svg>Current Investigation
+              </button>
+              <button id="report-tab" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="report-panel">
+                <svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>Report Export
+              </button>
             </div>
 
             <section id="investigation-panel" class="tab-panel active" role="tabpanel" aria-labelledby="investigation-tab">
+              <section id="risk-summary" class="risk-summary" aria-live="polite"></section>
               <div id="signals" class="signal-grid"></div>
 
               <div class="detail-grid">
                 <section class="detail-section">
-                  <h3>Identity</h3>
+                  <h3><svg class="icon" aria-hidden="true"><use href="#i-id"/></svg>Identity</h3>
                   <dl id="identity-list"></dl>
                 </section>
 
                 <section class="detail-section">
-                  <h3>HTTP</h3>
+                  <h3><svg class="icon" aria-hidden="true"><use href="#i-route"/></svg>HTTP</h3>
                   <div id="http-details"></div>
                 </section>
 
                 <section class="detail-section">
-                  <h3>DNS</h3>
+                  <h3><svg class="icon" aria-hidden="true"><use href="#i-globe"/></svg>DNS</h3>
                   <div id="dns-details"></div>
                 </section>
 
                 <section class="detail-section">
-                  <h3>TLS</h3>
+                  <h3><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>TLS</h3>
                   <div id="tls-details"></div>
                 </section>
 
                 <section class="detail-section source-section">
-                  <h3>Page Extracts</h3>
+                  <h3><svg class="icon" aria-hidden="true"><use href="#i-code"/></svg>Page Extracts</h3>
                   <div id="source-details"></div>
                 </section>
               </div>
 
               <section class="detail-section indicator-summary-section">
                 <div class="section-header">
-                  <h3>Current Indicators</h3>
+                  <h3><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>Current Indicators</h3>
                   <p id="indicator-summary"></p>
                 </div>
                 <div id="indicator-summary-list" class="indicator-summary-list"></div>
@@ -87,8 +133,8 @@
             <section id="report-panel" class="tab-panel" role="tabpanel" aria-labelledby="report-tab" hidden>
               <section class="detail-section case-section">
                 <div class="section-title-block">
-                  <h3>Report Redaction & Export</h3>
-                  <p>These notes are included only in exported scan JSON.</p>
+                  <h3><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>Report Redaction &amp; Export</h3>
+                  <p>These notes are included only in exported scan JSON. The preview updates as you type.</p>
                 </div>
                 <form id="case-form" class="case-form">
                   <label>Title<input name="title" autocomplete="off"></label>
@@ -107,17 +153,17 @@
                     <label><input type="checkbox" name="includeRawProfiles" checked> Raw Technical Profiles</label>
                     <label><input type="checkbox" name="redactVictimDetails"> Redact Victim Details</label>
                   </fieldset>
-                  <button class="secondary-button" type="submit">Apply to Export</button>
+                  <button class="secondary-button" type="submit"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span class="label">Apply to Export</span></button>
                 </form>
               </section>
 
               <section class="detail-section evidence-section">
                 <div class="section-header">
-                  <h3>Evidence Package</h3>
+                  <h3><svg class="icon" aria-hidden="true"><use href="#i-shield-check"/></svg>Evidence Package</h3>
                   <div class="button-row">
-                    <button id="export-case" class="secondary-button" type="button">Export Scan JSON</button>
-                    <button id="copy-iocs" class="secondary-button" type="button">Copy IOCs</button>
-                    <button id="copy-json" class="secondary-button" type="button">Copy JSON</button>
+                    <button id="export-case" class="secondary-button" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="label">Export Scan JSON</span></button>
+                    <button id="copy-iocs" class="secondary-button" type="button"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span class="label">Copy IOCs</span></button>
+                    <button id="copy-json" class="secondary-button" type="button"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg><span class="label">Copy JSON</span></button>
                   </div>
                 </div>
                 <div id="evidence-details"></div>
@@ -126,7 +172,7 @@
 
               <section class="detail-section raw-section">
                 <details>
-                  <summary>Export Package JSON</summary>
+                  <summary><svg class="icon" aria-hidden="true"><use href="#i-braces"/></svg>Export Package JSON</summary>
                   <pre id="raw-json"></pre>
                 </details>
               </section>

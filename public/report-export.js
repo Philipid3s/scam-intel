@@ -63,6 +63,7 @@
         ips: source.ips || [],
         links: source.links || [],
         socialHandles: source.socialHandles || [],
+        exfilEndpoints: source.exfilEndpoints || [],
       };
     }
 
