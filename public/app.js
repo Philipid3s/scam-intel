@@ -20,6 +20,8 @@ const evidenceDetails = document.querySelector("#evidence-details");
 const reportPreview = document.querySelector("#report-preview");
 const indicatorSummary = document.querySelector("#indicator-summary");
 const indicatorSummaryList = document.querySelector("#indicator-summary-list");
+const riskSummary = document.querySelector("#risk-summary");
+const submitButton = form.querySelector('button[type="submit"]');
 const tabButtons = [...document.querySelectorAll(".tab-button")];
 const tabPanels = [...document.querySelectorAll(".tab-panel")];
 const reportExport = window.ScamIntelReportExport;
@@ -47,6 +49,44 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+const SEVERITY = {
+  high: { rank: 0, label: "High", icon: "i-high" },
+  medium: { rank: 1, label: "Medium", icon: "i-medium" },
+  info: { rank: 2, label: "Info", icon: "i-info" },
+};
+const NO_RECORD_ERRORS = ["ENODATA", "ENOTFOUND"];
+
+function icon(name, className = "icon") {
+  return `<svg class="${className}" aria-hidden="true"><use href="#${name}"/></svg>`;
+}
+
+function severityOf(level) {
+  return SEVERITY[level] || SEVERITY.info;
+}
+
+function setButtonLabel(button, text) {
+  const label = button.querySelector(".label");
+  (label || button).textContent = text;
+}
+
+function flashButton(button, text) {
+  const original = button.querySelector(".label")?.textContent || button.textContent;
+  setButtonLabel(button, text);
+  button.classList.add("is-done");
+  setTimeout(() => {
+    setButtonLabel(button, original);
+    button.classList.remove("is-done");
+  }, 1200);
+}
+
+// Certificate subject/issuer arrive as objects such as {"CN":"x","O":"y"}.
+function formatDistinguishedName(value) {
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+  return Object.entries(value).map(([key, part]) => `${key}=${Array.isArray(part) ? part.join(" + ") : part}`).join(", ");
 }
 
 function formatValue(value) {
@@ -167,6 +207,7 @@ function formatIocText(result) {
     ["URLs", source.links],
     ["Form Actions", source.formActions],
     ["Social Handles", source.socialHandles],
+    ["Exfiltration Endpoints", source.exfilEndpoints],
   ];
 
   return groups
@@ -187,15 +228,74 @@ function renderDefinitionList(node, entries) {
     .join("");
 }
 
+function sortedSignals(result) {
+  return [...(result.signals || [])].sort((a, b) => severityOf(a.level).rank - severityOf(b.level).rank);
+}
+
+function renderRiskSummary(result) {
+  const counts = { high: 0, medium: 0, info: 0 };
+  for (const signal of result.signals || []) {
+    counts[signal.level in counts ? signal.level : "info"] += 1;
+  }
+  const verdict = counts.high ? "high" : counts.medium ? "medium" : "low";
+  const copy = {
+    high: ["High risk", "Strong indicators of scam or phishing infrastructure. Treat as hostile and preserve evidence."],
+    medium: ["Elevated risk", "Suspicious characteristics found. Review the signals below before drawing conclusions."],
+    low: ["No strong indicators", "Local checks found nothing alarming. Continue with content and reputation review."],
+  }[verdict];
+  const lead = sortedSignals(result).filter((signal) => signal.level === "high").slice(0, 3).map((signal) => signal.title);
+
+  riskSummary.className = `risk-summary risk-${verdict}`;
+  riskSummary.innerHTML = `
+    <div class="risk-verdict">
+      ${icon(verdict === "low" ? "i-check" : severityOf(verdict).icon, "risk-icon")}
+      <div>
+        <strong>${escapeHtml(copy[0])}</strong>
+        <p>${escapeHtml(lead.length ? `${copy[1]} Key findings: ${lead.join(", ")}.` : copy[1])}</p>
+      </div>
+    </div>
+    <ul class="risk-counts" aria-label="Signal counts">
+      ${["high", "medium", "info"].map((level) => `
+        <li class="count-${level}${counts[level] ? "" : " is-zero"}"><strong>${counts[level]}</strong><span>${severityOf(level).label}</span></li>
+      `).join("")}
+    </ul>
+  `;
+}
+
 function renderSignals(result) {
-  signals.innerHTML = result.signals
-    .map((signal) => `
-      <article class="signal ${escapeHtml(signal.level)}">
-        <strong>${escapeHtml(signal.title)}</strong>
-        <p>${escapeHtml(signal.detail)}</p>
-      </article>
-    `)
+  signals.innerHTML = sortedSignals(result)
+    .map((signal) => {
+      const severity = severityOf(signal.level);
+      return `
+        <article class="signal ${escapeHtml(signal.level)}">
+          <div class="signal-head">
+            ${icon(severity.icon, "signal-icon")}
+            <span class="severity-chip">${escapeHtml(severity.label)}</span>
+          </div>
+          <strong>${escapeHtml(signal.title)}</strong>
+          <p>${escapeHtml(signal.detail)}</p>
+        </article>
+      `;
+    })
     .join("");
+}
+
+function formatMx(record) {
+  if (!record.ok || !Array.isArray(record.value) || !record.value.length || typeof record.value[0] !== "object") {
+    return record;
+  }
+  const value = record.value.map((mx) => (mx.exchange === "." || !mx.exchange ? "Null MX (accepts no mail)" : `${mx.priority} ${mx.exchange}`));
+  return { ...record, value };
+}
+
+// Resolver codes such as ENODATA just mean "no records"; show them as such.
+function renderDnsValue(record) {
+  const shown = record.label.startsWith("MX") ? formatMx(record) : record;
+  if (shown.ok && shown.value?.length) {
+    return `<code>${escapeHtml(formatValue(shown.value))}</code>`;
+  }
+  const text = shown.ok || NO_RECORD_ERRORS.includes(shown.error) ? "No records" : `Lookup failed (${shown.error})`;
+  return `<span class="muted-value">${escapeHtml(text)}</span>`;
 }
 
 function renderDns(result) {
@@ -210,7 +310,7 @@ function renderDns(result) {
       ${records.map((record) => `
         <li>
           <span class="record-title">${escapeHtml(record.label)}</span>
-          <code>${escapeHtml(record.ok ? formatValue(record.value) : record.error)}</code>
+          ${renderDnsValue(record)}
         </li>
       `).join("")}
     </ul>
@@ -252,8 +352,8 @@ function renderTls(result) {
   renderDefinitionList(tlsDetails.querySelector("dl"), [
     ["Authorized", result.tls.authorized ? "Yes" : "No"],
     ["Auth issue", result.tls.authorizationError],
-    ["Subject", result.tls.subject],
-    ["Issuer", result.tls.issuer],
+    ["Subject", formatDistinguishedName(result.tls.subject)],
+    ["Issuer", formatDistinguishedName(result.tls.issuer)],
     ["Valid from", result.tls.validFrom],
     ["Valid to", result.tls.validTo],
     ["SHA-256", result.tls.fingerprint256],
@@ -280,7 +380,7 @@ function renderIndicatorGroup(title, values, options = {}) {
     const chain = typeof item === "object" ? item.chain : null;
     const addressType = typeof item === "object" ? item.addressType : null;
     const href = typeof item === "object" ? item.explorerUrl : (/^0x[a-fA-F0-9]{40}$/.test(value) ? `https://etherscan.io/address/${encodeURIComponent(value)}` : null);
-    const label = chain === "bitcoin" ? "BTC" : chain === "ethereum" ? "ETH" : "Explorer";
+    const label = { bitcoin: "BTC", ethereum: "ETH", tron: "TRON" }[chain] || "Explorer";
     const displayText = options.compact ? escapeHtml(truncateMiddle(value)) : text;
     const meta = [label, addressType].filter(Boolean).join(" | ");
     if (href) {
@@ -381,6 +481,9 @@ function setCaseForm(result) {
     }
     if (field.type === "checkbox") {
       field.checked = data[field.name] ?? field.defaultChecked;
+    } else if (field.tagName === "SELECT") {
+      // An empty value matches no option and leaves the select blank.
+      field.value = data[field.name] || field.options[0]?.value || "";
     } else {
       field.value = data[field.name] || "";
     }
@@ -397,7 +500,11 @@ function renderSource(result) {
     return;
   }
 
+  const exfil = (result.source.exfilEndpoints || []).map((endpoint) => `${endpoint.platform}: ${endpoint.value}`);
+  const obfuscation = (result.source.scriptObfuscation || []).map((entry) => `${entry.technique} (${entry.count})`);
   const groups = [
+    renderIndicatorGroup("Exfiltration endpoints", exfil, { kind: "exfil" }),
+    renderIndicatorGroup("Script obfuscation", obfuscation),
     renderIndicatorGroup("Crypto wallets", result.source.cryptoWalletDetails || result.source.cryptoWallets, { compact: true, kind: "wallets", openLimit: 5 }),
     renderIndicatorGroup("Emails", result.source.emails, { compact: true }),
     renderIndicatorGroup("Phone numbers", result.source.phones, { compact: true }),
@@ -420,28 +527,20 @@ function renderSource(result) {
 
 function renderEvidence(result) {
   const artifacts = result.evidence?.artifacts || {};
-  const scans = result.scans || [];
-  const auditLog = result.auditLog || [];
+  const collection = result.evidence?.collection || {};
   evidenceDetails.innerHTML = `
     <div class="evidence-grid">
       <dl class="compact-list">
-        <dt>Case</dt><dd>${escapeHtml(result.case?.caseNumber || result.caseId || "Unsaved scan")}</dd>
-        <dt>Scan ID</dt><dd>${escapeHtml(result.scanId || scans[0]?.id || "Not persisted")}</dd>
-        <dt>Tool</dt><dd>ScamIntel ${escapeHtml(result.evidence?.collection?.toolVersion || "")}</dd>
-        <dt>Collected UTC</dt><dd>${escapeHtml(result.evidence?.collection?.collectedAtUtc || result.scannedAt)}</dd>
+        <dt>Tool</dt><dd>ScamIntel ${escapeHtml(collection.toolVersion || "")}</dd>
+        <dt>Collected UTC</dt><dd>${escapeHtml(collection.collectedAtUtc || result.scannedAt)}</dd>
+        <dt>Complete</dt><dd>${collection.timedOut ? "No, scan time limit reached" : "Yes"}</dd>
       </dl>
       <dl class="compact-list">
-        <dt>Result SHA-256</dt><dd><code>${escapeHtml(artifacts.result?.sha256 || scans[0]?.resultSha256)}</code></dd>
-        <dt>Source SHA-256</dt><dd><code>${escapeHtml(artifacts.source?.sha256 || scans[0]?.sourceSha256)}</code></dd>
-        <dt>Headers SHA-256</dt><dd><code>${escapeHtml(artifacts.httpHeaders?.sha256 || scans[0]?.headersSha256)}</code></dd>
+        <dt>Result SHA-256</dt><dd><code>${escapeHtml(artifacts.result?.sha256)}</code></dd>
+        <dt>Source SHA-256</dt><dd><code>${escapeHtml(artifacts.source?.sha256)}</code></dd>
+        <dt>Headers SHA-256</dt><dd><code>${escapeHtml(artifacts.httpHeaders?.sha256)}</code></dd>
       </dl>
     </div>
-    ${scans.length ? `<h4>Scan Versions</h4><ul class="record-list">${scans.map((scan) => `
-      <li><span class="record-title">Scan ${escapeHtml(scan.id)} | ${escapeHtml(scan.riskLevel)}</span><code>${escapeHtml(scan.scannedAt)}</code></li>
-    `).join("")}</ul>` : ""}
-    ${auditLog.length ? `<h4>Audit Log</h4><ul class="record-list">${auditLog.map((entry) => `
-      <li><span class="record-title">${escapeHtml(entry.action)}</span><code>${escapeHtml(entry.createdAt)}</code></li>
-    `).join("")}</ul>` : ""}
   `;
 }
 
@@ -455,6 +554,7 @@ function renderIndicatorSummary(result) {
     ["IP addresses", source.ips || []],
     ["Links", source.links || []],
     ["Social handles", source.socialHandles || []],
+    ["Exfil endpoints", source.exfilEndpoints || []],
   ];
   const total = groups.reduce((count, [, values]) => count + values.length, 0);
   indicatorSummary.textContent = `${total} extracted indicator(s)`;
@@ -481,6 +581,7 @@ function renderResult(result) {
   resultMeta.textContent = `Unsaved scan | Scanned ${new Date(result.scannedAt).toLocaleString()} as ${result.target.type.toUpperCase()}`;
 
   setCaseForm(result);
+  renderRiskSummary(result);
   renderSignals(result);
   renderDefinitionList(identityList, [
     ["Input", result.target.input],
@@ -528,7 +629,9 @@ form.addEventListener("submit", async (event) => {
     return;
   }
 
-  form.querySelector("button").disabled = true;
+  submitButton.disabled = true;
+  submitButton.classList.add("is-loading");
+  setButtonLabel(submitButton, "Investigating");
   try {
     const result = await investigate(target);
     renderResult(result);
@@ -536,9 +639,18 @@ form.addEventListener("submit", async (event) => {
   } catch (error) {
     statusLine.textContent = error.message;
   } finally {
-    form.querySelector("button").disabled = false;
+    submitButton.disabled = false;
+    submitButton.classList.remove("is-loading");
+    setButtonLabel(submitButton, "Investigate");
   }
 });
+
+for (const chip of document.querySelectorAll("[data-example]")) {
+  chip.addEventListener("click", () => {
+    input.value = chip.dataset.example;
+    form.requestSubmit();
+  });
+}
 
 for (const tabButton of tabButtons) {
   tabButton.addEventListener("click", () => activateTab(tabButton));
@@ -549,10 +661,7 @@ copyJson.addEventListener("click", async () => {
     return;
   }
   await navigator.clipboard.writeText(JSON.stringify(buildExportPayload(currentResult), null, 2));
-  copyJson.textContent = "Copied";
-  setTimeout(() => {
-    copyJson.textContent = "Copy JSON";
-  }, 1200);
+  flashButton(copyJson, "Copied");
 });
 
 copyIocs.addEventListener("click", async () => {
@@ -565,10 +674,7 @@ copyIocs.addEventListener("click", async () => {
     return;
   }
   await navigator.clipboard.writeText(text);
-  copyIocs.textContent = "Copied";
-  setTimeout(() => {
-    copyIocs.textContent = "Copy IOCs";
-  }, 1200);
+  flashButton(copyIocs, "Copied");
 });
 
 exportCase.addEventListener("click", () => {
@@ -592,6 +698,7 @@ caseForm.addEventListener("submit", async (event) => {
   const updates = { ...getRawReportNotes(), ...getReportOptions() };
   currentResult.case = { ...(currentResult.case || {}), ...updates };
   refreshReportPackage();
+  flashButton(caseForm.querySelector('button[type="submit"]'), "Applied");
   statusLine.textContent = "Report export package updated.";
 });
 

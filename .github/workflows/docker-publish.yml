@@ -8,6 +8,8 @@ env:
 
 jobs:
   docker:
+    # Forks have no Docker Hub credentials; skip instead of failing.
+    if: github.repository == 'Philipid3s/scam-intel'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,6 +31,7 @@ jobs:
         run: |
           node --check server.js
           node --check public/app.js
+          node --check public/report-export.js
 
       - name: Run tests
         run: npm test

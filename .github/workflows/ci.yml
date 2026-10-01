@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
 
 jobs:
@@ -25,6 +25,7 @@ jobs:
         run: |
           node --check server.js
           node --check public/app.js
+          node --check public/report-export.js
 
       - name: Run tests
         run: npm test
